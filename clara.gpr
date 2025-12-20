@@ -40,7 +40,10 @@ project Clara is
    for Library_Interface use
      ("Clara_Config",
       "Clara",
-      "Clara.Version");
+      "Clara.Version",
+      "Clara.Types",
+      "Clara.Errors",
+      "Clara.Application");
 
    -- ==========================================================================
    -- Compiler Package: Ada 2022 Standards and Best Practices

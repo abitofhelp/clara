@@ -13,15 +13,9 @@ with Ada.Command_Line;
 with Ada.Text_IO;
 with Test_Framework;
 
---  Import all test procedures
-with Test_Result;
-with Test_Option;
-with Test_Either;
-with Test_Try;
-with Test_Try_Option;
-with Test_Try_Map_To_Result;
-with Test_Try_Map_To_Result_With_Param;
-with Test_Scoped;
+--  Import Clara test procedures
+with Test_Types;
+with Test_Errors;
 
 procedure Unit_Runner is
 
@@ -44,14 +38,8 @@ begin
    --  Run all unit test procedures
    --  Each test registers its results with Test_Framework
 
-   Test_Result;
-   Test_Option;
-   Test_Either;
-   Test_Try;
-   Test_Try_Option;
-   Test_Try_Map_To_Result;
-   Test_Try_Map_To_Result_With_Param;
-   Test_Scoped;
+   Test_Types;
+   Test_Errors;
 
    --  Get cumulative results
    Total  := Test_Framework.Grand_Total_Tests;

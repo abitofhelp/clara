@@ -5,7 +5,7 @@ pragma Style_Checks (Off);
 package Clara_Config is
    pragma Pure;
 
-   Crate_Version : constant String := "4.1.0";
+   Crate_Version : constant String := "0.1.0";
    Crate_Name : constant String := "clara";
 
    Alire_Host_OS : constant String := "macos";
