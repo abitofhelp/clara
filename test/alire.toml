@@ -1,0 +1,24 @@
+name = "clara_tests"
+description = "Test suite for clara"
+version = "4.1.0"
+authors = ["Michael Gardner"]
+maintainers = ["Michael Gardner <mike@abitofhelp.com>"]
+licenses = "BSD-3-Clause"
+
+# This crate is not meant to be published
+auto-gpr-with = false
+
+# Reference the actual GPR project file
+project-files = ["unit/unit_tests.gpr"]
+
+[[depends-on]]
+clara = "*"
+
+[[depends-on]]
+gnatcov = "^22.0.1"
+
+[[depends-on]]
+gnatprove = "*"
+
+[[pins]]
+clara = { path = ".." }

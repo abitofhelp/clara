@@ -1,0 +1,20 @@
+name = "clara"
+description = "Type-safe CLI argument parsing with functional monads"
+version = "0.1.0"
+
+authors = ["A Bit of Help, Inc. - Michael Gardner"]
+maintainers = ["A Bit of Help, Inc. - Michael Gardner <mjgardner@abitofhelp.com>"]
+maintainers-logins = ["abitofhelp"]
+licenses = "BSD-3-Clause"
+website = "https://github.com/abitofhelp/clara"
+tags = ["cli", "command-line", "arguments", "parser", "ada2022", "spark", "functional", "type-safe"]
+
+[build-switches]
+"*".Ada_Version = "Ada2022"
+"*".Style_Checks = "yes"
+
+[[depends-on]]
+gnat = ">=13"
+
+[[depends-on]]
+functional = ">=4.0.0"

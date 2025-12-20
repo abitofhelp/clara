@@ -1,0 +1,134 @@
+with "config/clara_config.gpr";
+
+project Clara is
+
+   for Library_Name use "clara";
+   for Library_Version use Project'Library_Name & ".so." & Clara_Config.Crate_Version;
+
+   for Source_Dirs use ("src/**", "config/");
+   for Object_Dir use "obj/" & Clara_Config.Build_Profile;
+   for Create_Missing_Dirs use "True";
+   for Library_Dir use "lib";
+
+   type Library_Type_Type is ("relocatable", "static", "static-pic");
+   Library_Type : Library_Type_Type :=
+     external ("CLARA_LIBRARY_TYPE", external ("LIBRARY_TYPE", "static"));
+   for Library_Kind use Library_Type;
+
+   --  =======================================================================
+   --  Stand-Alone Library Configuration - PUBLIC API ENFORCEMENT
+   --  =======================================================================
+   --
+   --  CLARA - Command Line Arguments for Reliable Applications
+   --
+   --  Public packages:
+   --    - Clara              Root package
+   --    - Clara.Version      Library version information
+   --    - Clara.Types        Core types (Flag, Option, Positional)
+   --    - Clara.Errors       Parse error types
+   --    - Clara.Application  Generic CLI application definition
+   --    - Clara_Config       Build configuration
+   --
+   --  ENFORCED BY:
+   --    - Library_Standalone: Enables stand-alone library mode
+   --    - Library_Interface: Explicitly lists ONLY public packages
+   --    - GPRbuild: Prevents clients from accessing non-listed packages
+   --  =======================================================================
+
+   for Library_Standalone use "standard";
+
+   for Library_Interface use
+     ("Clara_Config",
+      "Clara",
+      "Clara.Version");
+
+   -- ==========================================================================
+   -- Compiler Package: Ada 2022 Standards and Best Practices
+   -- ==========================================================================
+   package Compiler is
+
+      -- Common switches applied to all build modes
+      Common_Switches := (
+         "-gnat2022",        -- Ada 2022 mode
+         "-gnatwa",          -- All warnings
+         "-gnatw.Y",         -- Disable warnings from system units
+         "-gnatwl",          -- Elaboration warnings
+         "-gnatwu",          -- Unused entities warnings
+         "-gnatw.u",         -- Unreferenced entities
+         "-gnatw.r",         -- Redundant constructs
+         "-gnatw.k",         -- Variable could be constant
+         "-gnatw.m",         -- Variable assigned but never read
+         "-gnatw.o",         -- Modified but unreferenced out parameters
+         "-gnatw.X",         -- Disable warnings on local exception propagation
+         "-gnatf",           -- Full error messages
+
+         -- Style checks (Ada Quality and Style Guide)
+         "-gnatyy",          -- Enable default style checks
+         "-gnaty3",          -- Check indentation of 3 spaces
+         "-gnatya",          -- Check attribute casing
+         "-gnatyb",          -- Check blanks at end of lines
+         "-gnatyc",          -- Check comment format
+         "-gnatyd",          -- Check no DOS line terminators
+         "-gnatye",          -- Check end labels
+         "-gnatyf",          -- Check form feeds/vertical tabs
+         "-gnatyh",          -- Check horizontal tabs
+         "-gnatyi",          -- Check if-then layout
+         "-gnatyk",          -- Check keyword casing
+         "-gnatyl",          -- Check layout
+         "-gnatym",          -- Check line length <= 79 (overridden by -gnatyM120)
+         "-gnatyn",          -- Check casing of entities in Standard
+         "-gnatyp",          -- Check pragma casing
+         "-gnatyr",          -- Check references
+         "-gnatys",          -- Check separate specs
+         "-gnatyt",          -- Check token spacing
+         "-gnatyu",          -- Check unnecessary blank lines
+         "-gnatyx",          -- Check extra parentheses
+         "-gnatyM120",       -- Maximum line length of 120 characters
+         "-gnatyN",          -- Check casing of predefined identifiers
+         "-gnatyO",          -- Check overriding indicators
+         "-gnatyS",          -- Check no statements on same line as THEN or ELSE
+         "-gnatW8"           -- UTF-8 encoding
+      );
+
+      for Default_Switches ("Ada") use Common_Switches & (
+         "-g",            -- Debug info
+         "-gnatVa",       -- All validity checks
+         "-gnateE",       -- Extra info in exceptions
+         "-gnata",        -- Enable assertions and contracts
+         "-gnatU",        -- Tag uninitialized scalars
+         "-gnatd.n"       -- Activate front-end inlining
+      );
+   end Compiler;
+
+   -- ==========================================================================
+   -- Binder Package: Runtime Configuration
+   -- ==========================================================================
+   package Binder is
+      for Default_Switches ("Ada") use (
+         "-Es",        -- Symbolic traceback
+         "-E"          -- Store tracebacks in exceptions
+      );
+   end Binder;
+
+   -- ==========================================================================
+   -- Builder Package: Build Process Configuration
+   -- ==========================================================================
+   package Builder is
+      for Default_Switches ("Ada") use (
+         "-j0",           -- Use all available cores (0 = auto-detect)
+         "-s"             -- Recompile if compiler switches change
+      );
+   end Builder;
+
+   -- ==========================================================================
+   -- Format Package: Code Formatting Configuration
+   -- ==========================================================================
+   package Format is
+      for Configuration use ".gnatformat.yaml";
+   end Format;
+
+   package Install is
+      for Artifacts (".") use ("share");
+   end Install;
+
+end Clara;

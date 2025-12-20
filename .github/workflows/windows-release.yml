@@ -1,0 +1,100 @@
+# =============================================================================
+# Windows Release Validation Workflow
+# =============================================================================
+# Purpose:
+#   Pre-flight check for Windows compatibility during release preparation.
+#   Called by release.py prepare script BEFORE tags are created.
+#   Development is done on macOS; this workflow ensures Windows compatibility.
+#
+# Triggers:
+#   - Manual dispatch only (called by release.py prepare)
+#   - Can also be triggered manually from GitHub Actions UI for testing
+#
+# Tests:
+#   - Library builds on Windows
+#   - All unit tests pass on Windows
+# =============================================================================
+
+name: Windows Release Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version being validated (e.g., 1.0.0)'
+        required: false
+        default: 'dev'
+      ref:
+        description: 'Git ref to checkout (branch, tag, or SHA)'
+        required: false
+        default: ''
+
+jobs:
+  windows-validation:
+    name: Windows Build & Test
+    runs-on: windows-latest
+
+    steps:
+      # -----------------------------------------------------------------------
+      # Checkout
+      # -----------------------------------------------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+          submodules: recursive
+
+      # -----------------------------------------------------------------------
+      # Setup Alire
+      # -----------------------------------------------------------------------
+      - name: Setup Alire
+        uses: alire-project/setup-alire@v3
+        with:
+          version: 2.0.2
+
+      # -----------------------------------------------------------------------
+      # Build library
+      # -----------------------------------------------------------------------
+      - name: Build library
+        shell: bash
+        run: |
+          echo "Building clara library for Windows..."
+          alr build -- -j4
+          echo "Library build complete"
+
+      # -----------------------------------------------------------------------
+      # Build unit tests
+      # -----------------------------------------------------------------------
+      - name: Build unit tests
+        shell: bash
+        run: |
+          echo "Building unit tests..."
+          alr exec -- gprbuild -P test/unit/unit_tests.gpr -p -j4
+          echo "Unit tests build complete"
+
+      # -----------------------------------------------------------------------
+      # Run unit tests
+      # -----------------------------------------------------------------------
+      - name: Run unit tests
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "Running Unit Tests"
+          echo "========================================"
+          ./test/bin/unit_runner.exe
+          echo "Unit tests complete"
+
+      # -----------------------------------------------------------------------
+      # Summary
+      # -----------------------------------------------------------------------
+      - name: Test Summary
+        if: always()
+        shell: bash
+        run: |
+          echo "========================================"
+          echo "Windows Release Validation Complete"
+          echo "========================================"
+          echo "Version: ${{ github.event.inputs.version || 'dev' }}"
+          echo "Ref: ${{ github.event.inputs.ref || github.ref }}"
+          echo "Platform: windows-latest"
+          echo "Alire: 2.0.2"
