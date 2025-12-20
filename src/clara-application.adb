@@ -38,9 +38,9 @@ package body Clara.Application is
    --  Package State
    --  ==========================================================================
 
-   Arguments      : Argument_Array;
-   Argument_Count : Natural := 0;
-   Parsed         : Boolean := False;
+   Arguments        : Argument_Array;
+   Registered_Count : Natural := 0;  --  Count of registered arguments
+   Parsed           : Boolean := False;
 
    --  Index of the first positional argument definition
    First_Positional_Index : Natural := 0;
@@ -57,9 +57,9 @@ package body Clara.Application is
       Count_Ptr  : access Natural)
    is
    begin
-      if Argument_Count < Max_Arguments then
-         Argument_Count := Argument_Count + 1;
-         Arguments (Argument_Count) :=
+      if Registered_Count < Max_Arguments then
+         Registered_Count := Registered_Count + 1;
+         Arguments (Registered_Count) :=
            (Kind       => Flag_Argument,
             Short      => Short,
             Long       => To_Long_Switch (Long),
@@ -85,9 +85,9 @@ package body Clara.Application is
       Value_Ptr  : access Value_String)
    is
    begin
-      if Argument_Count < Max_Arguments then
-         Argument_Count := Argument_Count + 1;
-         Arguments (Argument_Count) :=
+      if Registered_Count < Max_Arguments then
+         Registered_Count := Registered_Count + 1;
+         Arguments (Registered_Count) :=
            (Kind       => Option_Argument,
             Short      => Short,
             Long       => To_Long_Switch (Long),
@@ -110,12 +110,12 @@ package body Clara.Application is
       Values_Ptr : access Value_Vector)
    is
    begin
-      if Argument_Count < Max_Arguments then
-         Argument_Count := Argument_Count + 1;
+      if Registered_Count < Max_Arguments then
+         Registered_Count := Registered_Count + 1;
          if First_Positional_Index = 0 then
-            First_Positional_Index := Argument_Count;
+            First_Positional_Index := Registered_Count;
          end if;
-         Arguments (Argument_Count) :=
+         Arguments (Registered_Count) :=
            (Kind       => Positional_Argument,
             Short      => ASCII.NUL,
             Long       => To_Long_Switch (Name),  --  Reuse for display name
@@ -137,7 +137,7 @@ package body Clara.Application is
 
    function Find_By_Short (C : Character) return Natural is
    begin
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          if Arguments (I).Short = C then
             return I;
          end if;
@@ -148,7 +148,7 @@ package body Clara.Application is
    function Find_By_Long (S : String) return Natural is
       use Long_Switch_Strings;
    begin
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          if To_String (Arguments (I).Long) = S then
             return I;
          end if;
@@ -169,7 +169,7 @@ package body Clara.Application is
    begin
       --  Reset state from any previous parse
       Parsed := False;
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          case Arguments (I).Kind is
             when Flag_Argument =>
                if Arguments (I).Flag_Set /= null then
@@ -190,7 +190,7 @@ package body Clara.Application is
       end loop;
 
       --  Parse command line arguments
-      while Arg_Index <= Argument_Count loop
+      while Arg_Index <= Ada.Command_Line.Argument_Count loop
          declare
             Arg : constant String := Argument (Arg_Index);
          begin
@@ -256,7 +256,7 @@ package body Clara.Application is
                      when Option_Argument =>
                         if Equals_Pos = 0 then
                            --  Value in next argument
-                           if Arg_Index >= Argument_Count then
+                           if Arg_Index >= Ada.Command_Line.Argument_Count then
                               return Parse_Result.New_Error
                                 (Missing_Value_Error (Arg));
                            end if;
@@ -312,7 +312,7 @@ package body Clara.Application is
                               if I < Arg'Last then
                                  --  Rest of this arg is the value
                                  Val := To_Value (Arg (I + 1 .. Arg'Last));
-                              elsif Arg_Index < Argument_Count then
+                              elsif Arg_Index < Ada.Command_Line.Argument_Count then
                                  --  Next arg is the value
                                  Arg_Index := Arg_Index + 1;
                                  Val := To_Value (Argument (Arg_Index));
@@ -340,7 +340,7 @@ package body Clara.Application is
             else
                --  Positional argument
                if Current_Pos_Arg > 0 and then
-                  Current_Pos_Arg <= Argument_Count and then
+                  Current_Pos_Arg <= Registered_Count and then
                   Arguments (Current_Pos_Arg).Kind = Positional_Argument
                then
                   declare
@@ -354,7 +354,7 @@ package body Clara.Application is
                         --  Move to next positional if not Multiple
                         if not Arguments (Current_Pos_Arg).Multiple then
                            --  Find next positional
-                           for J in Current_Pos_Arg + 1 .. Argument_Count loop
+                           for J in Current_Pos_Arg + 1 .. Registered_Count loop
                               if Arguments (J).Kind = Positional_Argument then
                                  Current_Pos_Arg := J;
                                  exit;
@@ -378,7 +378,7 @@ package body Clara.Application is
       end loop;
 
       --  Handle remaining arguments after "--" as positional
-      while Arg_Index <= Argument_Count loop
+      while Arg_Index <= Ada.Command_Line.Argument_Count loop
          if Current_Pos_Arg > 0 and then
             Arguments (Current_Pos_Arg).Pos_Values /= null
          then
@@ -396,7 +396,7 @@ package body Clara.Application is
       end loop;
 
       --  Check required options
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          if Arguments (I).Kind = Option_Argument and then
             Arguments (I).Required and then
             (Arguments (I).Opt_Has = null or else
@@ -438,7 +438,7 @@ package body Clara.Application is
       --  Usage line
       Put ("Usage: " & App_Name);
       Put (" [OPTIONS]");
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          if Arguments (I).Kind = Positional_Argument then
             Put (" ");
             if Arguments (I).Multiple then
@@ -456,7 +456,7 @@ package body Clara.Application is
       Put_Line ("  -h, --help     Show this help message");
       Put_Line ("      --version  Show version information");
 
-      for I in 1 .. Argument_Count loop
+      for I in 1 .. Registered_Count loop
          case Arguments (I).Kind is
             when Flag_Argument =>
                Put ("  ");
@@ -497,7 +497,7 @@ package body Clara.Application is
       declare
          Has_Positional : Boolean := False;
       begin
-         for I in 1 .. Argument_Count loop
+         for I in 1 .. Registered_Count loop
             if Arguments (I).Kind = Positional_Argument then
                Has_Positional := True;
                exit;
@@ -507,7 +507,7 @@ package body Clara.Application is
          if Has_Positional then
             New_Line;
             Put_Line ("Arguments:");
-            for I in 1 .. Argument_Count loop
+            for I in 1 .. Registered_Count loop
                if Arguments (I).Kind = Positional_Argument then
                   Put ("  " & To_String (Arguments (I).Long));
                   if Length (Arguments (I).Help_Text) > 0 then
