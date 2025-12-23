@@ -90,6 +90,7 @@ begin
    Put_Line ("");
    Put_Line ("-- Length Constants --");
 
+   pragma Warnings (Off, "condition is always*");
    Check ("Max_Name_Length is 32", Max_Name_Length = 32);
    Check ("Max_Long_Switch_Length is 64", Max_Long_Switch_Length = 64);
    Check ("Max_Value_Name_Length is 16", Max_Value_Name_Length = 16);
@@ -98,6 +99,7 @@ begin
    Check ("Max_Message_Length is 512", Max_Message_Length = 512);
    Check ("Max_Arguments is 256", Max_Arguments = 256);
    Check ("Max_Positional_Values is 128", Max_Positional_Values = 128);
+   pragma Warnings (On, "condition is always*");
 
    --  =========================================================================
    --  Test Value_Vector
@@ -136,10 +138,12 @@ begin
       OK : constant Argument_Kind := Option_Argument;
       PK : constant Argument_Kind := Positional_Argument;
    begin
+      pragma Warnings (Off, "condition is always*");
       Check ("Flag_Argument exists", FK = Flag_Argument);
       Check ("Option_Argument exists", OK = Option_Argument);
       Check ("Positional_Argument exists", PK = Positional_Argument);
       Check ("Kinds are distinct", FK /= OK and OK /= PK and FK /= PK);
+      pragma Warnings (On, "condition is always*");
    end;
 
    --  =========================================================================
