@@ -51,6 +51,17 @@ jobs:
           version: 2.0.2
 
       # -----------------------------------------------------------------------
+      # Update Alire index and fetch dependencies
+      # -----------------------------------------------------------------------
+      - name: Fetch dependencies
+        shell: bash
+        run: |
+          echo "Updating Alire index and fetching dependencies..."
+          alr index --update-all
+          alr update
+          echo "Dependencies fetched"
+
+      # -----------------------------------------------------------------------
       # Build library
       # -----------------------------------------------------------------------
       - name: Build library
