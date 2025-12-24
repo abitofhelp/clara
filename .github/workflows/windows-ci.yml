@@ -51,14 +51,14 @@ jobs:
           version: 2.0.2
 
       # -----------------------------------------------------------------------
-      # Replace local pin with GitHub URL pin for CI
+      # Replace local pins with GitHub URL pins for CI
       # -----------------------------------------------------------------------
-      - name: Update functional pin for CI
+      - name: Update dependency pins for CI
         shell: bash
         run: |
-          # Replace local path pin with GitHub URL pin (functional v4.1.0 commit)
+          # Replace local path pins with GitHub URL pins
           sed -i "s|path = '../functional'|url = \"https://github.com/abitofhelp/functional.git\", commit = \"ff0a5e28e0d18485a36c21c4d4476792aa0cbcf7\"|" alire.toml
-          echo "Updated pin to use GitHub URL (functional v4.1.0)"
+          echo "Updated pins to use GitHub URLs"
           cat alire.toml
 
       # -----------------------------------------------------------------------
