@@ -17,4 +17,7 @@ tags = ["cli", "command-line", "arguments", "parser", "ada2022", "spark", "funct
 gnat = ">=13"
 
 [[depends-on]]
-functional = ">=4.0.0"
+functional = "^4.0.0"
+
+[[pins]]
+functional = { path = '../functional' }
