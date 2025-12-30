@@ -1,6 +1,6 @@
 name = "clara"
 description = "Type-safe CLI argument parsing with functional monads"
-version = "0.1.0"
+version = "1.0.0"
 
 authors = ["A Bit of Help, Inc. - Michael Gardner"]
 maintainers = ["A Bit of Help, Inc. - Michael Gardner <mjgardner@abitofhelp.com>"]

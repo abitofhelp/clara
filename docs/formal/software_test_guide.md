@@ -1,11 +1,12 @@
 # Software Test Guide (STG)
 
 **Project:** CLARA - Command Line Arguments for Reliable Applications
-**Version:** 0.1.0
-**Date:** 2025-12-19
-**SPDX-License-Identifier:** BSD-3-Clause
-**Copyright:** (c) 2025 Michael Gardner, A Bit of Help, Inc.
-**Status:** In Development
+**Version:** 1.0.0<br>
+**Date:** 2025-12-29<br>
+**SPDX-License-Identifier:** BSD-3-Clause<br>
+**License File:** See the LICENSE file in the project root<br>
+**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Status:** Released
 
 ---
 
