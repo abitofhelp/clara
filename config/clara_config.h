@@ -2,7 +2,7 @@
 #ifndef CLARA_CONFIG_H
 #define CLARA_CONFIG_H
 
-#define CRATE_VERSION "0.1.0"
+#define CRATE_VERSION "1.0.0"
 #define CRATE_NAME "clara"
 
 #define ALIRE_HOST_OS "macos"

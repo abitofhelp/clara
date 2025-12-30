@@ -30,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.0] - 2025-12-29
 
+**Test Coverage:** 79 unit + 0 integration + 0 examples = 79 total
+
 _Initial release of CLARA._
 
 ### Added

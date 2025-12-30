@@ -31,7 +31,7 @@ Add to your `alire.toml`:
 
 ```toml
 [[depends-on]]
-clara = "^0.1.0"
+clara = "^1.0.0"
 ```
 
 ### Basic Usage
