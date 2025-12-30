@@ -8,8 +8,8 @@ licenses = "BSD-3-Clause"
 # This crate is not meant to be published
 auto-gpr-with = false
 
-# Reference the actual GPR project file
-project-files = ["unit/unit_tests.gpr"]
+# Reference the actual GPR project files
+project-files = ["unit/unit_tests.gpr", "integration/integration_tests.gpr"]
 
 [[depends-on]]
 clara = "*"

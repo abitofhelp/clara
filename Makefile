@@ -277,7 +277,8 @@ test-unit: build build-tests
 
 test-integration: build build-tests
 	@echo "$(GREEN)Running integration tests...$(NC)"
-	@echo "$(YELLOW)No integration tests defined for clara library$(NC)"
+	@./test/bin/integration_runner
+	@echo "$(GREEN)✓ Integration tests complete$(NC)"
 
 test-e2e: build build-tests
 	@echo "$(GREEN)Running E2E tests...$(NC)"

@@ -14,8 +14,11 @@ with Ada.Text_IO;
 with Test_Framework;
 
 --  Import Clara test procedures
+with Test_Clara;
 with Test_Types;
 with Test_Errors;
+with Test_Version;
+with Test_Application;
 
 procedure Unit_Runner is
 
@@ -38,8 +41,11 @@ begin
    --  Run all unit test procedures
    --  Each test registers its results with Test_Framework
 
+   Test_Clara;
    Test_Types;
    Test_Errors;
+   Test_Version;
+   Test_Application;
 
    --  Get cumulative results
    Total  := Test_Framework.Grand_Total_Tests;
