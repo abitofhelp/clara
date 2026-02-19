@@ -98,7 +98,7 @@ begin
    Check ("Max_Value_Length is 4096", Max_Value_Length = 4096);
    Check ("Max_Message_Length is 512", Max_Message_Length = 512);
    Check ("Max_Arguments is 256", Max_Arguments = 256);
-   Check ("Max_Positional_Values is 128", Max_Positional_Values = 128);
+   Check ("Max_Positional_Values is 4096", Max_Positional_Values = 4096);
    pragma Warnings (On, "condition is always*");
 
    --  =========================================================================

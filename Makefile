@@ -52,8 +52,9 @@ PYTHON3 := python3
 # =============================================================================
 # Tool Flags
 # =============================================================================
-ALR_BUILD_FLAGS := -j8 | grep -E 'warning:|(style)|error:' || true
-ALR_TEST_FLAGS  := -j8 | grep -E 'warning:|(style)|error:' || true
+# Filter build output to show only warnings/errors (capture both stdout and stderr)
+ALR_BUILD_FLAGS := -j0 2>&1 | grep -E 'warning:|error:|\(style\)|finished|Success' || true
+ALR_TEST_FLAGS  := -j0 2>&1 | grep -E 'warning:|error:|\(style\)|finished|Success' || true
 
 # =============================================================================
 # Directories
