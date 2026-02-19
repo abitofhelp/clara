@@ -1,8 +1,8 @@
 --  ===========================================================================
 --  Clara SPARK Verification Project
 --  ===========================================================================
---  Standalone project for SPARK formal verification of the clara library.
---  No external dependencies required.
+--  Project for SPARK formal verification of the clara library.
+--  Requires functional library dependency.
 --
 --  Usage:
 --    cd test && alr exec -- gnatprove -P ../clara_spark.gpr --mode=check
@@ -10,6 +10,8 @@
 --  Or for full proof:
 --    cd test && alr exec -- gnatprove -P ../clara_spark.gpr --mode=prove --level=2
 --  ===========================================================================
+
+with "functional.gpr";
 
 project Clara_SPARK is
 

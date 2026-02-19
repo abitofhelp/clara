@@ -39,7 +39,8 @@ is
    Max_Arguments : constant := 256;
 
    --  Maximum number of values for a multi-value positional
-   Max_Positional_Values : constant := 128;
+   --  Increased to 4096 to support large codebases (e.g., src/**/*.ads)
+   Max_Positional_Values : constant := 4096;
 
    --  ==========================================================================
    --  Bounded String Packages
