@@ -276,6 +276,39 @@ begin
           Run_Test ("test_parse_commands", "-v src/"));
 
    --  =========================================================================
+   --  Multi-Value Option Tests
+   --  =========================================================================
+
+   Put_Line ("");
+   Put_Line ("=== Multi-Value Option Tests ===");
+   Put_Line ("");
+
+   --  Single repeatable option + positional
+   Check ("test_multi_option --exclude-path=/foo src/",
+          Run_Test ("test_multi_option", "--exclude-path=/foo src/"));
+
+   --  Two repeatable options (long form)
+   Check ("test_multi_option --exclude-path=/foo --exclude-path=/bar src/",
+          Run_Test ("test_multi_option",
+                    "--exclude-path=/foo --exclude-path=/bar src/"));
+
+   --  Two repeatable options (short form with space)
+   Check ("test_multi_option -e /foo -e /bar src/",
+          Run_Test ("test_multi_option", "-e /foo -e /bar src/"));
+
+   --  Two repeatable options (short form attached)
+   Check ("test_multi_option -e/foo -e/bar src/",
+          Run_Test ("test_multi_option", "-e/foo -e/bar src/"));
+
+   --  No excludes, just positional
+   Check ("test_multi_option src/ (no excludes)",
+          Run_Test ("test_multi_option", "src/"));
+
+   --  Help triggers help exit
+   Check ("test_multi_option --help",
+          Run_Test ("test_multi_option", "--help"));
+
+   --  =========================================================================
    --  Summary
    --  =========================================================================
 

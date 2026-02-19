@@ -32,7 +32,8 @@ project Integration_Tests is
       "test_positional_as_switch.adb",
       "test_multi_positional.adb",
       "test_no_positional.adb",
-      "test_parse_commands.adb"
+      "test_parse_commands.adb",
+      "test_multi_option.adb"
    );
 
    package Compiler renames Clara.Compiler;
