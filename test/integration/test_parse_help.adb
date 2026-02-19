@@ -75,7 +75,7 @@ begin
 
       else
          Put_Line ("error=" & Clara.Errors.Format (Err));
-         Set_Exit_Status (Failure);
+         Set_Exit_Status (Success);
       end if;
    end if;
 

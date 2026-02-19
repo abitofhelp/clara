@@ -13,6 +13,24 @@ with Clara.Version;
 package body Clara.Application is
 
    --  ==========================================================================
+   --  Internal Constants
+   --  ==========================================================================
+
+   Max_Commands : constant := 16;
+
+   --  ==========================================================================
+   --  Internal Types for Command Registration
+   --  ==========================================================================
+
+   type Command_Entry is record
+      Name      : Long_Switch_String := Long_Switch_Strings.Null_Bounded_String;
+      Help_Text : Help_String := Help_Strings.Null_Bounded_String;
+      Is_Active : access Boolean := null;
+   end record;
+
+   type Command_Array is array (1 .. Max_Commands) of Command_Entry;
+
+   --  ==========================================================================
    --  Internal Types for Argument Registration
    --  ==========================================================================
 
@@ -24,6 +42,7 @@ package body Clara.Application is
       Help_Text  : Help_String := Help_Strings.Null_Bounded_String;
       Required   : Boolean := False;
       Multiple   : Boolean := False;
+      Cmd_Scope  : Long_Switch_String := Long_Switch_Strings.Null_Bounded_String;
       --  State pointers (set by child generics)
       Flag_Set   : access Boolean := null;
       Flag_Count : access Natural := null;
@@ -39,11 +58,36 @@ package body Clara.Application is
    --  ==========================================================================
 
    Arguments        : Argument_Array;
-   Registered_Count : Natural := 0;  --  Count of registered arguments
+   Registered_Count : Natural := 0;
    Parsed           : Boolean := False;
 
    --  Index of the first positional argument definition
    First_Positional_Index : Natural := 0;
+
+   --  Command state
+   Commands             : Command_Array;
+   Registered_Cmd_Count : Natural := 0;
+   Active_Cmd_Index     : Natural := 0;
+   Command_Arg_Position : Natural := 0;
+
+   --  ==========================================================================
+   --  Internal: Register a command
+   --  ==========================================================================
+
+   procedure Register_Command
+     (Name       : String;
+      Help_Text  : String;
+      Active_Ptr : access Boolean)
+   is
+   begin
+      if Registered_Cmd_Count < Max_Commands then
+         Registered_Cmd_Count := Registered_Cmd_Count + 1;
+         Commands (Registered_Cmd_Count) :=
+           (Name      => To_Long_Switch (Name),
+            Help_Text => To_Help (Help_Text),
+            Is_Active => Active_Ptr);
+      end if;
+   end Register_Command;
 
    --  ==========================================================================
    --  Internal: Register an argument
@@ -53,6 +97,7 @@ package body Clara.Application is
      (Short      : Character;
       Long       : String;
       Help_Text  : String;
+      Cmd_Scope  : String;
       Set_Ptr    : access Boolean;
       Count_Ptr  : access Natural)
    is
@@ -67,6 +112,7 @@ package body Clara.Application is
             Help_Text  => To_Help (Help_Text),
             Required   => False,
             Multiple   => False,
+            Cmd_Scope  => To_Long_Switch (Cmd_Scope),
             Flag_Set   => Set_Ptr,
             Flag_Count => Count_Ptr,
             Opt_Value  => null,
@@ -81,6 +127,7 @@ package body Clara.Application is
       Value_Name : String;
       Help_Text  : String;
       Required   : Boolean;
+      Cmd_Scope  : String;
       Has_Ptr    : access Boolean;
       Value_Ptr  : access Value_String)
    is
@@ -95,6 +142,7 @@ package body Clara.Application is
             Help_Text  => To_Help (Help_Text),
             Required   => Required,
             Multiple   => False,
+            Cmd_Scope  => To_Long_Switch (Cmd_Scope),
             Flag_Set   => null,
             Flag_Count => null,
             Opt_Value  => Value_Ptr,
@@ -123,6 +171,7 @@ package body Clara.Application is
             Help_Text  => To_Help (Help_Text),
             Required   => False,
             Multiple   => Multiple,
+            Cmd_Scope  => Long_Switch_Strings.Null_Bounded_String,
             Flag_Set   => null,
             Flag_Count => null,
             Opt_Value  => null,
@@ -157,6 +206,112 @@ package body Clara.Application is
    end Find_By_Long;
 
    --  ==========================================================================
+   --  Internal: Check command scope
+   --  ==========================================================================
+   --  Returns True if the argument at Idx is allowed given the currently
+   --  active command. Global arguments (empty Cmd_Scope) are always allowed.
+
+   function Check_Scope (Idx : Positive) return Boolean is
+      use Long_Switch_Strings;
+   begin
+      if Registered_Cmd_Count = 0 then
+         return True;  --  No commands registered; everything is global
+      end if;
+
+      if Length (Arguments (Idx).Cmd_Scope) = 0 then
+         return True;  --  Global argument
+      end if;
+
+      if Active_Cmd_Index = 0 then
+         return False;  --  Scoped arg but no command active
+      end if;
+
+      return To_String (Arguments (Idx).Cmd_Scope) =
+             To_String (Commands (Active_Cmd_Index).Name);
+   end Check_Scope;
+
+   --  ==========================================================================
+   --  Internal: Phase 1 - Find command word
+   --  ==========================================================================
+   --  Scans arguments left-to-right. Skips switches (and their values).
+   --  The first non-switch argument matching a registered command name
+   --  becomes the active command.
+
+   procedure Find_Command is
+      use Ada.Command_Line;
+      use Long_Switch_Strings;
+
+      I : Positive := 1;
+   begin
+      Active_Cmd_Index := 0;
+      Command_Arg_Position := 0;
+
+      while I <= Argument_Count loop
+         declare
+            Arg : constant String := Argument (I);
+         begin
+            if Arg = "--" then
+               --  End of switches; no command found
+               return;
+
+            elsif Arg'Length >= 2
+              and then Arg (Arg'First .. Arg'First + 1) = "--"
+            then
+               --  Long switch. Under '=' convention, value is always
+               --  in the same token. Just skip this argument.
+               I := I + 1;
+
+            elsif Arg'Length >= 2 and then Arg (Arg'First) = '-' then
+               --  Short switch(es). Check if any maps to an option
+               --  that consumes the next argument as its value.
+               declare
+                  Consumed_Next : Boolean := False;
+               begin
+                  for J in Arg'First + 1 .. Arg'Last loop
+                     declare
+                        C   : constant Character := Arg (J);
+                        Idx : constant Natural := Find_By_Short (C);
+                     begin
+                        if Idx > 0
+                          and then Arguments (Idx).Kind = Option_Argument
+                        then
+                           --  Option found. If this char is the last in the
+                           --  token, the value is the next argument.
+                           if J = Arg'Last then
+                              Consumed_Next := True;
+                           end if;
+                           exit;  --  Rest of token is value (or end)
+                        end if;
+                     end;
+                  end loop;
+
+                  I := I + 1;
+                  if Consumed_Next and then I <= Argument_Count then
+                     I := I + 1;  --  Skip value argument
+                  end if;
+               end;
+
+            else
+               --  Non-switch. Check against registered commands.
+               for K in 1 .. Registered_Cmd_Count loop
+                  if Arg = To_String (Commands (K).Name) then
+                     Active_Cmd_Index := K;
+                     Command_Arg_Position := I;
+                     if Commands (K).Is_Active /= null then
+                        Commands (K).Is_Active.all := True;
+                     end if;
+                     return;
+                  end if;
+               end loop;
+
+               --  Not a command; continue scanning
+               I := I + 1;
+            end if;
+         end;
+      end loop;
+   end Find_Command;
+
+   --  ==========================================================================
    --  Parse Implementation
    --  ==========================================================================
 
@@ -166,9 +321,13 @@ package body Clara.Application is
 
       Arg_Index        : Positive := 1;
       Current_Pos_Arg  : Natural := First_Positional_Index;
+      Has_Commands     : constant Boolean := Registered_Cmd_Count > 0;
    begin
       --  Reset state from any previous parse
       Parsed := False;
+      Active_Cmd_Index := 0;
+      Command_Arg_Position := 0;
+
       for I in 1 .. Registered_Count loop
          case Arguments (I).Kind is
             when Flag_Argument =>
@@ -189,16 +348,37 @@ package body Clara.Application is
          end case;
       end loop;
 
-      --  Parse command line arguments
-      while Arg_Index <= Ada.Command_Line.Argument_Count loop
+      for I in 1 .. Registered_Cmd_Count loop
+         if Commands (I).Is_Active /= null then
+            Commands (I).Is_Active.all := False;
+         end if;
+      end loop;
+
+      --  Phase 1: Find active command (if commands are registered)
+      if Has_Commands then
+         Find_Command;
+      end if;
+
+      --  Phase 2: Parse all arguments
+      while Arg_Index <= Argument_Count loop
          declare
-            Arg : constant String := Argument (Arg_Index);
+            Arg             : constant String := Argument (Arg_Index);
+            Is_Command_Word : constant Boolean :=
+              Has_Commands
+              and then Command_Arg_Position > 0
+              and then Arg_Index = Command_Arg_Position;
          begin
-            if Arg'Length = 0 then
+            if Is_Command_Word then
+               --  Skip command word (already processed in Phase 1)
+               null;
+
+            elsif Arg'Length = 0 then
                --  Empty argument, skip
                null;
 
-            elsif Arg'Length >= 2 and then Arg (Arg'First .. Arg'First + 1) = "--" then
+            elsif Arg'Length >= 2
+              and then Arg (Arg'First .. Arg'First + 1) = "--"
+            then
                --  Long switch
                if Arg = "--" then
                   --  "--" means rest are positional
@@ -207,8 +387,9 @@ package body Clara.Application is
                end if;
 
                declare
-                  Rest       : constant String := Arg (Arg'First + 2 .. Arg'Last);
-                  Equals_Pos : Natural := 0;
+                  Rest        : constant String :=
+                    Arg (Arg'First + 2 .. Arg'Last);
+                  Equals_Pos  : Natural := 0;
                   Switch_Name : Long_Switch_String;
                   Switch_Value : Value_String;
                   Idx : Natural;
@@ -232,15 +413,25 @@ package body Clara.Application is
 
                   --  Check for help/version
                   if To_String (Switch_Name) = "help" then
+                     Show_Help;
                      return Parse_Result.New_Error (Help_Requested_Error);
                   elsif To_String (Switch_Name) = "version" then
-                     return Parse_Result.New_Error (Version_Requested_Error);
+                     return Parse_Result.New_Error
+                       (Version_Requested_Error);
                   end if;
 
                   Idx := Find_By_Long (To_String (Switch_Name));
                   if Idx = 0 then
                      return Parse_Result.New_Error
                        (Unknown_Switch_Error (Arg));
+                  end if;
+
+                  --  Check command scope
+                  if not Check_Scope (Idx) then
+                     return Parse_Result.New_Error
+                       (Command_Mismatch_Error
+                          (Arg,
+                           To_String (Arguments (Idx).Cmd_Scope)));
                   end if;
 
                   case Arguments (Idx).Kind is
@@ -254,14 +445,15 @@ package body Clara.Application is
                         end if;
 
                      when Option_Argument =>
+                        --  Long options REQUIRE '=' syntax
                         if Equals_Pos = 0 then
-                           --  Value in next argument
-                           if Arg_Index >= Ada.Command_Line.Argument_Count then
-                              return Parse_Result.New_Error
-                                (Missing_Value_Error (Arg));
-                           end if;
-                           Arg_Index := Arg_Index + 1;
-                           Switch_Value := To_Value (Argument (Arg_Index));
+                           return Parse_Result.New_Error
+                             (Make_Error
+                                (Missing_Value,
+                                 "Long option requires '=' syntax"
+                                 & " (e.g., --"
+                                 & To_String (Switch_Name) & "=VALUE)",
+                                 Arg));
                         end if;
                         if Arguments (Idx).Opt_Has /= null then
                            Arguments (Idx).Opt_Has.all := True;
@@ -271,7 +463,7 @@ package body Clara.Application is
                         end if;
 
                      when Positional_Argument =>
-                        --  Long switches can't be positional
+                        --  Long switches cannot be positional
                         return Parse_Result.New_Error
                           (Unknown_Switch_Error (Arg));
                   end case;
@@ -286,12 +478,22 @@ package body Clara.Application is
                   begin
                      if C = 'h' then
                         --  Built-in help short form
-                        return Parse_Result.New_Error (Help_Requested_Error);
+                        Show_Help;
+                        return Parse_Result.New_Error
+                          (Help_Requested_Error);
                      end if;
 
                      if Idx = 0 then
                         return Parse_Result.New_Error
                           (Unknown_Switch_Error ("-" & C));
+                     end if;
+
+                     --  Check command scope
+                     if not Check_Scope (Idx) then
+                        return Parse_Result.New_Error
+                          (Command_Mismatch_Error
+                             ("-" & C,
+                              To_String (Arguments (Idx).Cmd_Scope)));
                      end if;
 
                      case Arguments (Idx).Kind is
@@ -311,11 +513,15 @@ package body Clara.Application is
                            begin
                               if I < Arg'Last then
                                  --  Rest of this arg is the value
-                                 Val := To_Value (Arg (I + 1 .. Arg'Last));
-                              elsif Arg_Index < Ada.Command_Line.Argument_Count then
+                                 Val := To_Value
+                                   (Arg (I + 1 .. Arg'Last));
+                              elsif Arg_Index
+                                < Argument_Count
+                              then
                                  --  Next arg is the value
                                  Arg_Index := Arg_Index + 1;
-                                 Val := To_Value (Argument (Arg_Index));
+                                 Val := To_Value
+                                   (Argument (Arg_Index));
                               else
                                  return Parse_Result.New_Error
                                    (Missing_Value_Error ("-" & C));
@@ -353,9 +559,12 @@ package body Clara.Application is
 
                         --  Move to next positional if not Multiple
                         if not Arguments (Current_Pos_Arg).Multiple then
-                           --  Find next positional
-                           for J in Current_Pos_Arg + 1 .. Registered_Count loop
-                              if Arguments (J).Kind = Positional_Argument then
+                           for J in Current_Pos_Arg + 1 ..
+                             Registered_Count
+                           loop
+                              if Arguments (J).Kind =
+                                Positional_Argument
+                              then
                                  Current_Pos_Arg := J;
                                  exit;
                               end if;
@@ -363,11 +572,12 @@ package body Clara.Application is
                         end if;
                      else
                         return Parse_Result.New_Error
-                          (Too_Many_Values_Error (Max_Positional_Values));
+                          (Too_Many_Values_Error
+                             (Max_Positional_Values));
                      end if;
                   end;
                else
-                  --  No positional argument registered, treat as error
+                  --  No positional argument registered
                   return Parse_Result.New_Error
                     (Unknown_Switch_Error (Arg));
                end if;
@@ -378,7 +588,7 @@ package body Clara.Application is
       end loop;
 
       --  Handle remaining arguments after "--" as positional
-      while Arg_Index <= Ada.Command_Line.Argument_Count loop
+      while Arg_Index <= Argument_Count loop
          if Current_Pos_Arg > 0 and then
             Arguments (Current_Pos_Arg).Pos_Values /= null
          then
@@ -388,23 +598,36 @@ package body Clara.Application is
             begin
                if PV.Count < PV.Capacity then
                   PV.Count := PV.Count + 1;
-                  PV.Items (PV.Count) := To_Value (Argument (Arg_Index));
+                  PV.Items (PV.Count) :=
+                    To_Value (Argument (Arg_Index));
                end if;
             end;
          end if;
          Arg_Index := Arg_Index + 1;
       end loop;
 
-      --  Check required options
+      --  Check required options (only global + active command)
       for I in 1 .. Registered_Count loop
-         if Arguments (I).Kind = Option_Argument and then
-            Arguments (I).Required and then
-            (Arguments (I).Opt_Has = null or else
-             not Arguments (I).Opt_Has.all)
+         if Arguments (I).Kind = Option_Argument
+           and then Arguments (I).Required
          then
-            return Parse_Result.New_Error
-              (Missing_Required_Error
-                 (Long_Switch_Strings.To_String (Arguments (I).Long)));
+            declare
+               Is_Global : constant Boolean :=
+                 Length (Arguments (I).Cmd_Scope) = 0;
+               Is_Active_Cmd : constant Boolean :=
+                 Active_Cmd_Index > 0
+                 and then To_String (Arguments (I).Cmd_Scope) =
+                          To_String (Commands (Active_Cmd_Index).Name);
+            begin
+               if (Is_Global or Is_Active_Cmd)
+                 and then (Arguments (I).Opt_Has = null
+                           or else not Arguments (I).Opt_Has.all)
+               then
+                  return Parse_Result.New_Error
+                    (Missing_Required_Error
+                       (To_String (Arguments (I).Long)));
+               end if;
+            end;
          end if;
       end loop;
 
@@ -422,6 +645,20 @@ package body Clara.Application is
    end Is_Parsed;
 
    --  ==========================================================================
+   --  Active_Command
+   --  ==========================================================================
+
+   function Active_Command return String is
+      use Long_Switch_Strings;
+   begin
+      if Active_Cmd_Index > 0 then
+         return To_String (Commands (Active_Cmd_Index).Name);
+      else
+         return "";
+      end if;
+   end Active_Command;
+
+   --  ==========================================================================
    --  Print_Help
    --  ==========================================================================
 
@@ -437,6 +674,9 @@ package body Clara.Application is
 
       --  Usage line
       Put ("Usage: " & App_Name);
+      if Registered_Cmd_Count > 0 then
+         Put (" <COMMAND>");
+      end if;
       Put (" [OPTIONS]");
       for I in 1 .. Registered_Count loop
          if Arguments (I).Kind = Positional_Argument then
@@ -450,6 +690,19 @@ package body Clara.Application is
       end loop;
       New_Line;
       New_Line;
+
+      --  Commands section
+      if Registered_Cmd_Count > 0 then
+         Put_Line ("Commands:");
+         for I in 1 .. Registered_Cmd_Count loop
+            Put ("  " & To_String (Commands (I).Name));
+            if Length (Commands (I).Help_Text) > 0 then
+               Put ("  " & To_String (Commands (I).Help_Text));
+            end if;
+            New_Line;
+         end loop;
+         New_Line;
+      end if;
 
       --  Options section
       Put_Line ("Options:");
@@ -469,6 +722,10 @@ package body Clara.Application is
                if Length (Arguments (I).Help_Text) > 0 then
                   Put ("  " & To_String (Arguments (I).Help_Text));
                end if;
+               if Length (Arguments (I).Cmd_Scope) > 0 then
+                  Put (" [" & To_String (Arguments (I).Cmd_Scope)
+                       & " only]");
+               end if;
                New_Line;
 
             when Option_Argument =>
@@ -485,6 +742,10 @@ package body Clara.Application is
                end if;
                if Arguments (I).Required then
                   Put (" (required)");
+               end if;
+               if Length (Arguments (I).Cmd_Scope) > 0 then
+                  Put (" [" & To_String (Arguments (I).Cmd_Scope)
+                       & " only]");
                end if;
                New_Line;
 
@@ -531,6 +792,28 @@ package body Clara.Application is
    end Print_Version;
 
    --  ==========================================================================
+   --  Command Child Generic Body
+   --  ==========================================================================
+
+   package body Command is
+
+      --  Package state
+      Is_Active_State : aliased Boolean := False;
+
+      function Is_Active return Boolean is
+      begin
+         return Is_Active_State;
+      end Is_Active;
+
+   begin
+      --  Register this command at elaboration
+      Register_Command
+        (Name       => Name,
+         Help_Text  => Help,
+         Active_Ptr => Is_Active_State'Access);
+   end Command;
+
+   --  ==========================================================================
    --  Flag Child Generic Body
    --  ==========================================================================
 
@@ -556,6 +839,7 @@ package body Clara.Application is
         (Short      => Short,
          Long       => Long,
          Help_Text  => Help,
+         Cmd_Scope  => Command,
          Set_Ptr    => Is_Flag_Set'Access,
          Count_Ptr  => Flag_Counter'Access);
    end Flag;
@@ -602,6 +886,7 @@ package body Clara.Application is
          Value_Name => Value_Name,
          Help_Text  => Help,
          Required   => Required,
+         Cmd_Scope  => Command,
          Has_Ptr    => Has_Val'Access,
          Value_Ptr  => Stored_Val'Access);
    end Option;

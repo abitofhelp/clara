@@ -18,6 +18,7 @@ pragma Ada_2022;
 with Ada.Text_IO;
 with Ada.Command_Line;
 with Clara.Application;
+with Clara.Errors;
 with Clara.Types;
 
 procedure Test_Multi_Positional is
@@ -58,9 +59,23 @@ begin
                    Clara.Types.Value_Strings.To_String (Output_File.First));
       end if;
       Set_Exit_Status (Success);
+   elsif CLI.Parse_Result.Error (Result).Kind in
+           Clara.Errors.Help_Requested | Clara.Errors.Version_Requested
+   then
+      Put_Line ("parsed=false");
+      Put_Line ("error_kind=" &
+                Clara.Errors.Error_Kind'Image
+                  (CLI.Parse_Result.Error (Result).Kind));
+      Set_Exit_Status (Success);
+
    else
       Put_Line ("parsed=false");
-      Set_Exit_Status (Failure);
+      Put_Line ("error_kind=" &
+                Clara.Errors.Error_Kind'Image
+                  (CLI.Parse_Result.Error (Result).Kind));
+      Put_Line ("error=" &
+                Clara.Errors.Format (CLI.Parse_Result.Error (Result)));
+      Set_Exit_Status (Success);
    end if;
 
 end Test_Multi_Positional;
