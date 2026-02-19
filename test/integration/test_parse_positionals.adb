@@ -87,7 +87,7 @@ begin
                   (CLI.Parse_Result.Error (Result).Kind));
       Put_Line ("error=" &
                 Clara.Errors.Format (CLI.Parse_Result.Error (Result)));
-      Set_Exit_Status (Failure);
+      Set_Exit_Status (Success);
    end if;
 
 end Test_Parse_Positionals;

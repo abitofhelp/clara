@@ -16,6 +16,7 @@ pragma Ada_2022;
 with Ada.Text_IO;
 with Ada.Command_Line;
 with Clara.Application;
+with Clara.Errors;
 with Clara.Types;
 
 procedure Test_Option_Value is
@@ -45,7 +46,7 @@ begin
       Put_Line ("parsed=true");
       Put_Line ("has_value=" & Boolean'Image (Output.Has_Value));
 
-      --  This exercises line 581: Option.Value returning Some
+      --  This exercises Option.Value returning Some
       declare
          Val_Opt : constant Output.String_Option.Option := Output.Value;
       begin
@@ -59,8 +60,23 @@ begin
       end;
 
       Set_Exit_Status (Success);
+
+   elsif CLI.Parse_Result.Error (Result).Kind in
+           Clara.Errors.Help_Requested | Clara.Errors.Version_Requested
+   then
+      Put_Line ("parsed=false");
+      Put_Line ("error_kind=" &
+                Clara.Errors.Error_Kind'Image
+                  (CLI.Parse_Result.Error (Result).Kind));
+      Set_Exit_Status (Success);
+
    else
       Put_Line ("parsed=false");
+      Put_Line ("error_kind=" &
+                Clara.Errors.Error_Kind'Image
+                  (CLI.Parse_Result.Error (Result).Kind));
+      Put_Line ("error=" &
+                Clara.Errors.Format (CLI.Parse_Result.Error (Result)));
       Set_Exit_Status (Failure);
    end if;
 

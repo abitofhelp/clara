@@ -38,6 +38,7 @@ is
       Duplicate_Switch,  --  Switch specified multiple times when not allowed
       Missing_Required,  --  Required option not provided
       Too_Many_Values,   --  Exceeded maximum positional arguments
+      Command_Mismatch,  --  Flag/option used with wrong command
       Help_Requested,    --  --help was specified (graceful exit)
       Version_Requested, --  --version was specified (graceful exit)
       Internal_Error);   --  Unexpected internal error
@@ -87,6 +88,10 @@ is
    function Too_Many_Values_Error (Max : Natural) return Parse_Error
    with Post => Too_Many_Values_Error'Result.Kind = Too_Many_Values;
 
+   function Command_Mismatch_Error
+     (Switch : String; Command : String) return Parse_Error
+   with Post => Command_Mismatch_Error'Result.Kind = Command_Mismatch;
+
    function Help_Requested_Error return Parse_Error
    with Post => Help_Requested_Error'Result.Kind = Help_Requested;
 
@@ -103,7 +108,8 @@ is
 
    function Is_User_Error (E : Parse_Error) return Boolean
      is (E.Kind in Unknown_Switch | Missing_Value | Invalid_Value |
-                   Duplicate_Switch | Missing_Required | Too_Many_Values);
+                   Duplicate_Switch | Missing_Required | Too_Many_Values |
+                   Command_Mismatch);
    --  True if error is due to user input
 
    --  ==========================================================================

@@ -59,6 +59,18 @@ is
          Context => "");
    end Too_Many_Values_Error;
 
+   function Command_Mismatch_Error
+     (Switch : String; Command : String) return Parse_Error
+   is
+   begin
+      return Make_Error
+        (Kind    => Command_Mismatch,
+         Message =>
+           "This option is only available with the '"
+           & Command & "' command",
+         Context => Switch);
+   end Command_Mismatch_Error;
+
    function Help_Requested_Error return Parse_Error is
    begin
       return

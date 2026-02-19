@@ -8,23 +8,44 @@ pragma Ada_2022;
 --  Purpose:
 --    Main generic package for defining command-line interfaces.
 --    Users instantiate this with their application name and description,
---    then use child generics (Flag, Option, Positional) to define arguments.
+--    then use child generics (Command, Flag, Option, Positional) to define
+--    arguments. Supports subcommands with command-scoped flags/options.
 --
---  Usage:
+--  Usage (without commands):
 --    package My_CLI is new Clara.Application ("myapp", "My application");
 --    package Verbose is new My_CLI.Flag ('v', "verbose", "Enable verbose");
---    package Output is new My_CLI.Option ('o', "output", "FILE", "Output path");
+--    package Output is new My_CLI.Option ('o', "output", "FILE", "Output");
 --    package Files is new My_CLI.Positional ("FILES", "Input files", True);
 --
 --    Result := My_CLI.Parse;
 --    if Verbose.Is_Set then ...
---    Path := Output.Value or "default.txt";
+--    Path := Output.Value_Or ("default.txt");
+--
+--  Usage (with commands):
+--    procedure My_Help;
+--    package CLI is new Clara.Application
+--      ("adafmt", "Ada formatter", Show_Help => My_Help);
+--    package Write_Cmd is new CLI.Command ("write", "Format files");
+--    package Check_Cmd is new CLI.Command ("check", "Verify compliance");
+--    package Workers is new CLI.Option
+--      ('j', "workers", "N", "Worker count");
+--    package Yes is new CLI.Flag
+--      ('y', "yes", "Skip confirmation", Command => "write");
+--    package Paths is new CLI.Positional ("PATHS", "Source paths", True);
+--
+--    Result := CLI.Parse;
+--    if Write_Cmd.Is_Active then ...
+--
+--  Value Syntax Convention:
+--    Long options require '=' syntax:  --workers=4
+--    Short options use space or attached: -j 4  or  -j4
 --
 --  Design Notes:
 --    - Each child generic instance registers itself at elaboration
 --    - Parse reads Ada.Command_Line and populates registered arguments
 --    - State is package-level, shared across child instances
 --    - SPARK_Mode is Off due to package-level state initialization
+--    - Commands enable two-phase parse: detect command, then process flags
 --
 --  ===========================================================================
 
@@ -36,6 +57,9 @@ with Functional.Option;
 generic
    App_Name        : String;  --  Application name (shown in help/errors)
    App_Description : String;  --  Application description (shown in help)
+   with procedure Show_Help is null;
+   --  User-provided help callback. Called when --help/-h is detected.
+   --  If not provided, the caller should handle Help_Requested error.
 package Clara.Application is
 
    --  ==========================================================================
@@ -55,17 +79,41 @@ package Clara.Application is
    function Parse return Parse_Result.Result;
    --  Parse command line arguments.
    --  Returns Ok(Unit) on success, Error(Parse_Error) on failure.
+   --  When commands are registered, performs two-phase parse:
+   --    Phase 1: Identify active command from first non-switch argument.
+   --    Phase 2: Process global and command-scoped flags/options.
    --  Must be called before querying flags/options/positionals.
 
    function Is_Parsed return Boolean;
    --  True if Parse has been called successfully.
 
+   function Active_Command return String;
+   --  Returns the name of the active command, or "" if none is active.
+
    procedure Print_Help;
-   --  Print help text to standard output.
-   --  Shows: name, description, usage, all flags/options/positionals.
+   --  Print auto-generated help text to standard output.
+   --  Shows: name, description, usage, commands, all flags/options/positionals.
 
    procedure Print_Version;
    --  Print version information to standard output.
+
+   --  ==========================================================================
+   --  Command Child Generic
+   --  ==========================================================================
+   --  Subcommand definition (e.g., write, check, dry-run).
+   --  The first non-switch argument matching a registered command name
+   --  becomes the active command. Command-scoped flags/options are only
+   --  accepted when their command is active.
+
+   generic
+      Name : String;        --  Command name (e.g., "write", "check")
+      Help : String := "";  --  Command description for help text
+   package Command is
+
+      function Is_Active return Boolean;
+      --  True if this command was specified on the command line.
+
+   end Command;
 
    --  ==========================================================================
    --  Flag Child Generic
@@ -74,9 +122,10 @@ package Clara.Application is
    --  Can appear multiple times for counting (e.g., -vvv for verbosity level 3)
 
    generic
-      Short : Character := ASCII.NUL;  --  Short form, e.g., 'v' for -v
-      Long  : String;                   --  Long form, e.g., "verbose" for --verbose
-      Help  : String := "";             --  Help text description
+      Short   : Character := ASCII.NUL;  --  Short form, e.g., 'v' for -v
+      Long    : String;                   --  Long form, e.g., "verbose"
+      Help    : String := "";             --  Help text description
+      Command : String := "";             --  "" = global, "write" = scoped
    package Flag is
 
       function Is_Set return Boolean;
@@ -90,7 +139,8 @@ package Clara.Application is
    --  ==========================================================================
    --  Option Child Generic
    --  ==========================================================================
-   --  Switch with value: -o file, --output=file, --output file
+   --  Switch with value: --output=file, -o file
+   --  Long options require '=' syntax. Short options use space or attached.
 
    generic
       Short      : Character := ASCII.NUL;  --  Short form, e.g., 'o' for -o
@@ -98,6 +148,7 @@ package Clara.Application is
       Value_Name : String := "VALUE";        --  Shown in help, e.g., "FILE"
       Help       : String := "";             --  Help text description
       Required   : Boolean := False;         --  If true, parse fails when missing
+      Command    : String := "";             --  "" = global, "write" = scoped
    package Option is
 
       --  Option type for return value

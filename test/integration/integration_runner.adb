@@ -115,20 +115,20 @@ begin
    Check ("test_parse_options -o file.txt",
           Run_Test ("test_parse_options", "-o file.txt"));
 
-   Check ("test_parse_options --output result.txt",
-          Run_Test ("test_parse_options", "--output result.txt"));
+   Check ("test_parse_options --output=result.txt",
+          Run_Test ("test_parse_options", "--output=result.txt"));
 
-   Check ("test_parse_options --config app.cfg",
-          Run_Test ("test_parse_options", "--config app.cfg"));
+   Check ("test_parse_options --config=app.cfg",
+          Run_Test ("test_parse_options", "--config=app.cfg"));
 
-   Check ("test_parse_options --format json",
-          Run_Test ("test_parse_options", "--format json"));
+   Check ("test_parse_options --format=json",
+          Run_Test ("test_parse_options", "--format=json"));
 
    Check ("test_parse_options --help (triggers help branch)",
           Run_Test ("test_parse_options", "--help"));
 
-   Check ("test_option_value basic",
-          Run_Test ("test_option_value", "--value test"));
+   Check ("test_option_value --output=test",
+          Run_Test ("test_option_value", "--output=test"));
 
    --  =========================================================================
    --  Positional Argument Tests
@@ -212,6 +212,68 @@ begin
    --  Run with single positional to exercise Files.Has_Values path
    Check ("test_parse_positionals single.txt",
           Run_Test ("test_parse_positionals", "single.txt"));
+
+   --  =========================================================================
+   --  Subcommand Tests
+   --  =========================================================================
+
+   Put_Line ("");
+   Put_Line ("=== Subcommand Tests ===");
+   Put_Line ("");
+
+   --  Basic command detection
+   Check ("test_parse_commands write src/",
+          Run_Test ("test_parse_commands", "write src/"));
+
+   Check ("test_parse_commands check src/",
+          Run_Test ("test_parse_commands", "check src/"));
+
+   Check ("test_parse_commands dry-run src/",
+          Run_Test ("test_parse_commands", "dry-run src/"));
+
+   --  Command with scoped flag
+   Check ("test_parse_commands write -y src/",
+          Run_Test ("test_parse_commands", "write -y src/"));
+
+   --  Command with scoped option (= syntax)
+   Check ("test_parse_commands write -b /backup src/",
+          Run_Test ("test_parse_commands", "write -b /backup src/"));
+
+   --  Global option before command
+   Check ("test_parse_commands -j 4 write src/",
+          Run_Test ("test_parse_commands", "-j 4 write src/"));
+
+   --  Global option with = (long form) before command
+   Check ("test_parse_commands --workers=4 write src/",
+          Run_Test ("test_parse_commands", "--workers=4 write src/"));
+
+   --  Global flag + command
+   Check ("test_parse_commands -v write src/",
+          Run_Test ("test_parse_commands", "-v write src/"));
+
+   --  Help without command
+   Check ("test_parse_commands --help",
+          Run_Test ("test_parse_commands", "--help"));
+
+   --  Help with command (Show_Help callback is called)
+   Check ("test_parse_commands write --help",
+          Run_Test ("test_parse_commands", "write --help"));
+
+   --  Wrong-command flag: -y is write-only, used with check
+   Check ("test_parse_commands check -y (command mismatch)",
+          Run_Test ("test_parse_commands", "check -y"));
+
+   --  Scoped flag without any command
+   Check ("test_parse_commands -y src/ (no command, scoped flag)",
+          Run_Test ("test_parse_commands", "-y src/"));
+
+   --  Long scoped option with wrong command
+   Check ("test_parse_commands check --yes (command mismatch long)",
+          Run_Test ("test_parse_commands", "check --yes"));
+
+   --  No command, just positionals (global flags only)
+   Check ("test_parse_commands -v src/",
+          Run_Test ("test_parse_commands", "-v src/"));
 
    --  =========================================================================
    --  Summary
