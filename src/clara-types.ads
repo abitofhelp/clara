@@ -42,6 +42,9 @@ is
    --  Increased to 4096 to support large codebases (e.g., src/**/*.ads)
    Max_Positional_Values : constant := 4096;
 
+   --  Maximum number of values for a multi-value option (e.g., --exclude-path)
+   Max_Option_Values : constant := 256;
+
    --  ==========================================================================
    --  Bounded String Packages
    --  ==========================================================================

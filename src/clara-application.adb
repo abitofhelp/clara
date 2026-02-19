@@ -48,6 +48,7 @@ package body Clara.Application is
       Flag_Count : access Natural := null;
       Opt_Value  : access Value_String := null;
       Opt_Has    : access Boolean := null;
+      Opt_Values : access Value_Vector := null;
       Pos_Values : access Value_Vector := null;
    end record;
 
@@ -117,6 +118,7 @@ package body Clara.Application is
             Flag_Count => Count_Ptr,
             Opt_Value  => null,
             Opt_Has    => null,
+            Opt_Values => null,
             Pos_Values => null);
       end if;
    end Register_Flag;
@@ -128,8 +130,10 @@ package body Clara.Application is
       Help_Text  : String;
       Required   : Boolean;
       Cmd_Scope  : String;
+      Multiple   : Boolean;
       Has_Ptr    : access Boolean;
-      Value_Ptr  : access Value_String)
+      Value_Ptr  : access Value_String;
+      Values_Ptr : access Value_Vector)
    is
    begin
       if Registered_Count < Max_Arguments then
@@ -141,12 +145,13 @@ package body Clara.Application is
             Value_Name => To_Value_Name (Value_Name),
             Help_Text  => To_Help (Help_Text),
             Required   => Required,
-            Multiple   => False,
+            Multiple   => Multiple,
             Cmd_Scope  => To_Long_Switch (Cmd_Scope),
             Flag_Set   => null,
             Flag_Count => null,
             Opt_Value  => Value_Ptr,
             Opt_Has    => Has_Ptr,
+            Opt_Values => Values_Ptr,
             Pos_Values => null);
       end if;
    end Register_Option;
@@ -176,6 +181,7 @@ package body Clara.Application is
             Flag_Count => null,
             Opt_Value  => null,
             Opt_Has    => null,
+            Opt_Values => null,
             Pos_Values => Values_Ptr);
       end if;
    end Register_Positional;
@@ -341,6 +347,9 @@ package body Clara.Application is
                if Arguments (I).Opt_Has /= null then
                   Arguments (I).Opt_Has.all := False;
                end if;
+               if Arguments (I).Opt_Values /= null then
+                  Arguments (I).Opt_Values.Count := 0;
+               end if;
             when Positional_Argument =>
                if Arguments (I).Pos_Values /= null then
                   Arguments (I).Pos_Values.Count := 0;
@@ -458,7 +467,23 @@ package body Clara.Application is
                         if Arguments (Idx).Opt_Has /= null then
                            Arguments (Idx).Opt_Has.all := True;
                         end if;
-                        if Arguments (Idx).Opt_Value /= null then
+                        if Arguments (Idx).Multiple
+                          and then Arguments (Idx).Opt_Values /= null
+                        then
+                           declare
+                              OV : constant access Value_Vector :=
+                                Arguments (Idx).Opt_Values;
+                           begin
+                              if OV.Count < OV.Capacity then
+                                 OV.Count := OV.Count + 1;
+                                 OV.Items (OV.Count) := Switch_Value;
+                              else
+                                 return Parse_Result.New_Error
+                                   (Too_Many_Values_Error
+                                      (Max_Option_Values));
+                              end if;
+                           end;
+                        elsif Arguments (Idx).Opt_Value /= null then
                            Arguments (Idx).Opt_Value.all := Switch_Value;
                         end if;
 
@@ -530,7 +555,23 @@ package body Clara.Application is
                               if Arguments (Idx).Opt_Has /= null then
                                  Arguments (Idx).Opt_Has.all := True;
                               end if;
-                              if Arguments (Idx).Opt_Value /= null then
+                              if Arguments (Idx).Multiple
+                                and then Arguments (Idx).Opt_Values /= null
+                              then
+                                 declare
+                                    OV : constant access Value_Vector :=
+                                      Arguments (Idx).Opt_Values;
+                                 begin
+                                    if OV.Count < OV.Capacity then
+                                       OV.Count := OV.Count + 1;
+                                       OV.Items (OV.Count) := Val;
+                                    else
+                                       return Parse_Result.New_Error
+                                         (Too_Many_Values_Error
+                                            (Max_Option_Values));
+                                    end if;
+                                 end;
+                              elsif Arguments (Idx).Opt_Value /= null then
                                  Arguments (Idx).Opt_Value.all := Val;
                               end if;
                               exit;  --  Consumed rest of arg for value
@@ -743,6 +784,9 @@ package body Clara.Application is
                if Arguments (I).Required then
                   Put (" (required)");
                end if;
+               if Arguments (I).Multiple then
+                  Put (" (repeatable)");
+               end if;
                if Length (Arguments (I).Cmd_Scope) > 0 then
                   Put (" [" & To_String (Arguments (I).Cmd_Scope)
                        & " only]");
@@ -851,32 +895,80 @@ package body Clara.Application is
    package body Option is
 
       --  Package state
-      Has_Val    : aliased Boolean := False;
-      Stored_Val : aliased Value_String := Value_Strings.Null_Bounded_String;
+      Has_Val       : aliased Boolean := False;
+      Stored_Val    : aliased Value_String := Value_Strings.Null_Bounded_String;
+      Stored_Values : aliased Value_Vector
+        ((if Multiple then Max_Option_Values else 1));
 
       function Has_Value return Boolean is
       begin
          return Has_Val;
       end Has_Value;
 
+      function Has_Values return Boolean is
+      begin
+         return Has_Val;
+      end Has_Values;
+
       function Value return String_Option.Option is
       begin
-         if Has_Val then
-            return String_Option.New_Some (Stored_Val);
-         else
+         if not Has_Val then
             return String_Option.None;
+         end if;
+         if Multiple then
+            return String_Option.New_Some (Stored_Values.Items (1));
+         else
+            return String_Option.New_Some (Stored_Val);
          end if;
       end Value;
 
       function Value_Or (Default : String) return String is
          use Value_Strings;
       begin
-         if Has_Val then
-            return To_String (Stored_Val);
-         else
+         if not Has_Val then
             return Default;
          end if;
+         if Multiple then
+            return To_String (Stored_Values.Items (1));
+         else
+            return To_String (Stored_Val);
+         end if;
       end Value_Or;
+
+      function Count return Natural is
+      begin
+         if Multiple then
+            return Stored_Values.Count;
+         else
+            return (if Has_Val then 1 else 0);
+         end if;
+      end Count;
+
+      function First return Value_String is
+      begin
+         if Multiple then
+            return Stored_Values.Items (1);
+         else
+            return Stored_Val;
+         end if;
+      end First;
+
+      function Values return Value_Vector is
+      begin
+         if Multiple then
+            return Stored_Values;
+         else
+            declare
+               V : Value_Vector (1);
+            begin
+               if Has_Val then
+                  V.Count := 1;
+                  V.Items (1) := Stored_Val;
+               end if;
+               return V;
+            end;
+         end if;
+      end Values;
 
    begin
       --  Register this option at elaboration
@@ -887,8 +979,10 @@ package body Clara.Application is
          Help_Text  => Help,
          Required   => Required,
          Cmd_Scope  => Command,
+         Multiple   => Multiple,
          Has_Ptr    => Has_Val'Access,
-         Value_Ptr  => Stored_Val'Access);
+         Value_Ptr  => (if Multiple then null else Stored_Val'Access),
+         Values_Ptr => (if Multiple then Stored_Values'Access else null));
    end Option;
 
    --  ==========================================================================

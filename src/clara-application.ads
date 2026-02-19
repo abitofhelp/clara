@@ -21,7 +21,7 @@ pragma Ada_2022;
 --    if Verbose.Is_Set then ...
 --    Path := Output.Value_Or ("default.txt");
 --
---  Usage (with commands):
+--  Usage (with commands and repeatable option):
 --    procedure My_Help;
 --    package CLI is new Clara.Application
 --      ("adafmt", "Ada formatter", Show_Help => My_Help);
@@ -29,12 +29,16 @@ pragma Ada_2022;
 --    package Check_Cmd is new CLI.Command ("check", "Verify compliance");
 --    package Workers is new CLI.Option
 --      ('j', "workers", "N", "Worker count");
+--    package Exclude is new CLI.Option
+--      (Long => "exclude-path", Value_Name => "PATH",
+--       Help => "Exclude path", Multiple => True);
 --    package Yes is new CLI.Flag
 --      ('y', "yes", "Skip confirmation", Command => "write");
 --    package Paths is new CLI.Positional ("PATHS", "Source paths", True);
 --
 --    Result := CLI.Parse;
 --    if Write_Cmd.Is_Active then ...
+--    for I in 1 .. Exclude.Count loop ... end loop;
 --
 --  Value Syntax Convention:
 --    Long options require '=' syntax:  --workers=4
@@ -149,6 +153,7 @@ package Clara.Application is
       Help       : String := "";             --  Help text description
       Required   : Boolean := False;         --  If true, parse fails when missing
       Command    : String := "";             --  "" = global, "write" = scoped
+      Multiple   : Boolean := False;         --  If true, collects multiple values
    package Option is
 
       --  Option type for return value
@@ -158,11 +163,26 @@ package Clara.Application is
       --  True if option was specified with a value.
 
       function Value return String_Option.Option;
-      --  Returns Some(value) if specified, None otherwise.
+      --  Returns Some(first value) if specified, None otherwise.
 
       function Value_Or (Default : String) return String;
-      --  Returns value if specified, otherwise default.
+      --  Returns first value if specified, otherwise default.
       --  Convenience function equivalent to: Value or To_Value(Default)
+
+      --  Multi-value API (mirrors Positional)
+      function Has_Values return Boolean;
+      --  True if at least one value was provided.
+
+      function Count return Natural;
+      --  Number of values collected.
+
+      function First return Value_String
+        with Pre => Has_Value;
+      --  First value. Precondition: Has_Value = True.
+
+      function Values return Value_Vector
+        with Post => (if not Multiple then Values'Result.Count <= 1);
+      --  All values. If Multiple = False, at most one value.
 
    end Option;
 
