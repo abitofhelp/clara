@@ -7,123 +7,87 @@ pragma Ada_2022;
 --
 --  Purpose:
 --    Defines core types used throughout CLARA for argument parsing.
---    All types are bounded for SPARK compatibility and embedded use.
---
---  Design Notes:
---    - Bounded strings avoid heap allocation
---    - Subtypes enforce maximum lengths at compile time
---    - Compatible with SPARK formal verification
+--    Bounded strings for metadata (switch names, help text).
+--    Unbounded strings for values (heap-allocated, finalized automatically).
+--    Dynamic vectors for multi-value storage.
 --
 --  ===========================================================================
 
 with Ada.Strings.Bounded;
+with Ada.Strings.Unbounded;
+with Ada.Containers.Vectors;
 
 package Clara.Types
-  with Preelaborate, SPARK_Mode => On
+  with Preelaborate
 is
 
    --  ==========================================================================
-   --  Length Constraints
+   --  Length Constraints for Metadata
    --  ==========================================================================
-   --  Maximum lengths for various string types. These bounds ensure
-   --  predictable memory usage and SPARK compatibility.
+   --  Bounded sizes for CLI metadata: switch names, help text, value names.
+   --  These are compile-time fixed and do not need heap allocation.
 
-   Max_Name_Length        : constant := 32;    --  App/command names
-   Max_Long_Switch_Length : constant := 64;    --  Long switch names
-   Max_Value_Name_Length  : constant := 16;    --  Value placeholder (e.g., FILE)
-   Max_Help_Length        : constant := 256;   --  Help text
-   Max_Value_Length       : constant := 4096;  --  Argument values
-   Max_Message_Length     : constant := 512;   --  Error messages
-
-   --  Maximum number of arguments we can handle
-   Max_Arguments : constant := 256;
-
-   --  Maximum number of values for a multi-value positional
-   --  Increased to 4096 to support large codebases (e.g., src/**/*.ads)
-   Max_Positional_Values : constant := 4096;
-
-   --  Maximum number of values for a multi-value option (e.g., --exclude-path)
-   Max_Option_Values : constant := 256;
+   Max_Long_Switch : constant := 64;   --  Long switch names (e.g., "exclude-path")
+   Max_Help        : constant := 256;  --  Help text descriptions
+   Max_Value_Name  : constant := 16;   --  Value placeholder (e.g., FILE, N)
 
    --  ==========================================================================
-   --  Bounded String Packages
+   --  Bounded String Packages (Metadata)
    --  ==========================================================================
 
-   package Name_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Name_Length);
-   subtype Name_String is Name_Strings.Bounded_String;
-
-   package Long_Switch_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Long_Switch_Length);
-   subtype Long_Switch_String is Long_Switch_Strings.Bounded_String;
-
-   package Value_Name_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Value_Name_Length);
-   subtype Value_Name_String is Value_Name_Strings.Bounded_String;
+   package Switch_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
+     (Max => Max_Long_Switch);
+   subtype Switch_String is Switch_Strings.Bounded_String;
 
    package Help_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Help_Length);
+     (Max => Max_Help);
    subtype Help_String is Help_Strings.Bounded_String;
 
-   package Value_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Value_Length);
-   subtype Value_String is Value_Strings.Bounded_String;
-
-   package Message_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
-     (Max => Max_Message_Length);
-   subtype Message_String is Message_Strings.Bounded_String;
+   package VName_Strings is new Ada.Strings.Bounded.Generic_Bounded_Length
+     (Max => Max_Value_Name);
+   subtype VName_String is VName_Strings.Bounded_String;
 
    --  ==========================================================================
-   --  Convenience Functions
+   --  Convenience Constructors (Metadata)
    --  ==========================================================================
 
-   function To_Name (S : String) return Name_String
-     is (Name_Strings.To_Bounded_String (S));
-
-   function To_Long_Switch (S : String) return Long_Switch_String
-     is (Long_Switch_Strings.To_Bounded_String (S));
-
-   function To_Value_Name (S : String) return Value_Name_String
-     is (Value_Name_Strings.To_Bounded_String (S));
+   function To_Switch (S : String) return Switch_String
+     is (Switch_Strings.To_Bounded_String (S));
 
    function To_Help (S : String) return Help_String
      is (Help_Strings.To_Bounded_String (S));
 
+   function To_VName (S : String) return VName_String
+     is (VName_Strings.To_Bounded_String (S));
+
+   --  ==========================================================================
+   --  Value Types (Unbounded - Heap Allocated)
+   --  ==========================================================================
+   --  Values are user-provided and can be arbitrarily long (file paths,
+   --  glob patterns, etc.). Unbounded_String is finalized automatically.
+
+   subtype Value_String is Ada.Strings.Unbounded.Unbounded_String;
+
    function To_Value (S : String) return Value_String
-     is (Value_Strings.To_Bounded_String (S));
+     renames Ada.Strings.Unbounded.To_Unbounded_String;
 
-   function To_Message (S : String) return Message_String
-     is (Message_Strings.To_Bounded_String (S));
+   function Value_To_String (V : Value_String) return String
+     renames Ada.Strings.Unbounded.To_String;
 
-   --  ==========================================================================
-   --  Argument Kind Enumeration
-   --  ==========================================================================
-
-   type Argument_Kind is
-     (Flag_Argument,        --  Boolean switch (e.g., -v, --verbose)
-      Option_Argument,      --  Switch with value (e.g., -o file, --output=file)
-      Positional_Argument); --  Non-switch argument (e.g., file paths)
+   Null_Value : Value_String
+     renames Ada.Strings.Unbounded.Null_Unbounded_String;
 
    --  ==========================================================================
-   --  Value Vector for Positional Arguments
+   --  Value List (Dynamic Vector)
    --  ==========================================================================
-   --  Simple bounded array for storing multiple positional values.
+   --  For multi-value options (e.g., --exclude-path=*.bak --exclude-path=tmp/)
+   --  and multi-value positionals (e.g., file1.adb file2.adb).
 
-   type Value_Array is array (Positive range <>) of Value_String;
+   package Value_Vectors is new Ada.Containers.Vectors
+     (Index_Type   => Positive,
+      Element_Type => Value_String,
+      "="          => Ada.Strings.Unbounded."=");
 
-   type Value_Vector (Capacity : Positive) is record
-      Items : Value_Array (1 .. Capacity);
-      Count : Natural := 0;
-   end record;
-
-   --  Vector operations
-   function Is_Empty (V : Value_Vector) return Boolean
-     is (V.Count = 0);
-
-   function Length (V : Value_Vector) return Natural
-     is (V.Count);
-
-   function Is_Full (V : Value_Vector) return Boolean
-     is (V.Count >= V.Capacity);
+   subtype Value_List is Value_Vectors.Vector;
 
 end Clara.Types;

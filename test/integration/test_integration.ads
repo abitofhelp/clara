@@ -1,5 +1,5 @@
 pragma Ada_2022;
 
-package Test_Clara is
+package Test_Integration is
    procedure Run (Total : out Natural; Passed : out Natural);
-end Test_Clara;
+end Test_Integration;

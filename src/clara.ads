@@ -7,30 +7,29 @@ pragma Ada_2022;
 --
 --  Purpose:
 --    Root package for the CLARA command-line argument parsing library.
---    Provides type-safe CLI parsing through generic instantiation,
---    integrating with Functional library's Result and Option monads.
+--    Provides type-safe CLI parsing through a generic package (Clara.CLI)
+--    with enum-indexed configuration and Functional.Result error handling.
 --
 --  Key Child Packages:
---    Clara.Application  - Generic CLI application definition
---    Clara.Types        - Core types for flags, options, positionals
---    Clara.Errors       - Parse error types
+--    Clara.Types    - Bounded metadata strings, unbounded values, vectors
+--    Clara.Errors   - Parse error types and factory functions
+--    Clara.CLI      - Generic parser (the core of Clara)
+--    Clara.Version  - Semantic version constants
 --
 --  Design Philosophy:
---    - Generic instantiation for compile-time type safety
---    - No string lookups - each flag/option is its own package
---    - Stateless parsing via Ada.Command_Line
---    - SPARK compatible - no heap allocation
---    - Integrates with Functional.Result and Functional.Option
+--    - Enum-indexed declarative configuration for compile-time safety
+--    - Aggregate initialization as the Ada-idiomatic "builder pattern"
+--    - Testable Parse (accepts argument array, not just Ada.Command_Line)
+--    - Integrates with Functional.Result for railway-oriented error handling
 --
 --  ===========================================================================
 
 package Clara
   with Pure
 is
-   --  Library name constant
    Library_Name : constant String := "CLARA";
 
-   --  Acronym expansion
-   Acronym : constant String := "Command Line Arguments for Reliable Applications";
+   Acronym : constant String :=
+     "Command Line Arguments for Reliable Applications";
 
 end Clara;

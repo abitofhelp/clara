@@ -27,7 +27,7 @@ pragma Ada_2022;
 --  =========================================================================
 
 package Clara.Version
-  with Preelaborate, SPARK_Mode => On
+  with Preelaborate
 is
 
    --  Semantic Version Components

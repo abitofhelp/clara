@@ -24,9 +24,9 @@ project Clara is
    --  Public packages:
    --    - Clara              Root package
    --    - Clara.Version      Library version information
-   --    - Clara.Types        Core types (Flag, Option, Positional)
+   --    - Clara.Types        Core types (bounded metadata, unbounded values)
    --    - Clara.Errors       Parse error types
-   --    - Clara.Application  Generic CLI application definition
+   --    - Clara.CLI          Generic CLI parser (the core of Clara)
    --    - Clara_Config       Build configuration
    --
    --  ENFORCED BY:
@@ -43,7 +43,7 @@ project Clara is
       "Clara.Version",
       "Clara.Types",
       "Clara.Errors",
-      "Clara.Application");
+      "Clara.CLI");
 
    -- ==========================================================================
    -- Compiler Package: Ada 2022 Standards and Best Practices

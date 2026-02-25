@@ -1,62 +1,43 @@
 pragma Ada_2022;
---  ======================================================================
---  Test_Clara - Unit tests for Clara root package
---  ======================================================================
---  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
---  SPDX-License-Identifier: BSD-3-Clause
---  ======================================================================
 
-with Ada.Text_IO;
-with Test_Framework;
+with Ada.Text_IO; use Ada.Text_IO;
 with Clara;
 
-procedure Test_Clara is
+package body Test_Clara is
 
-   use Ada.Text_IO;
+   Total_Count  : Natural := 0;
+   Passed_Count : Natural := 0;
 
-   Total  : Natural := 0;
-   Passed : Natural := 0;
-
-   procedure Check (Name : String; Condition : Boolean) is
+   procedure Assert (Condition : Boolean; Name : String) is
    begin
-      Total := Total + 1;
+      Total_Count := Total_Count + 1;
       if Condition then
-         Passed := Passed + 1;
-         Put_Line ("  PASS: " & Name);
+         Passed_Count := Passed_Count + 1;
+         Put_Line ("  [PASS] " & Name);
       else
-         Put_Line ("  FAIL: " & Name);
+         Put_Line ("  [FAIL] " & Name);
       end if;
-   end Check;
+   end Assert;
 
-begin
-   Put_Line ("");
-   Put_Line ("=== Clara Root Package Tests ===");
-   Put_Line ("");
+   procedure Run (Total : out Natural; Passed : out Natural) is
+   begin
+      Total_Count := 0;
+      Passed_Count := 0;
+      Put_Line ("--- Test_Clara ---");
 
-   --  =========================================================================
-   --  Test Library Constants
-   --  =========================================================================
+      Assert
+        (Clara.Library_Name = "CLARA",
+         "Library_Name is CLARA");
+      Assert
+        (Clara.Acronym'Length > 0,
+         "Acronym is not empty");
+      Assert
+        (Clara.Acronym (Clara.Acronym'First ..
+           Clara.Acronym'First + 11) = "Command Line",
+         "Acronym starts with Command Line");
 
-   Put_Line ("-- Library Constants --");
-
-   pragma Warnings (Off, "condition is always*");
-   Check ("Library_Name is CLARA",
-          Clara.Library_Name = "CLARA");
-   Check ("Acronym is defined",
-          Clara.Acronym'Length > 0);
-   pragma Warnings (On, "condition is always*");
-
-   Check ("Acronym contains 'Command Line'",
-          Clara.Acronym (Clara.Acronym'First ..
-                         Clara.Acronym'First + 11) = "Command Line");
-
-   --  =========================================================================
-   --  Summary
-   --  =========================================================================
-
-   Put_Line ("");
-   Put_Line ("Clara: " & Passed'Image & " /" & Total'Image & " passed");
-
-   Test_Framework.Register_Results (Total, Passed);
+      Total := Total_Count;
+      Passed := Passed_Count;
+   end Run;
 
 end Test_Clara;

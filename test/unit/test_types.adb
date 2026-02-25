@@ -1,158 +1,114 @@
 pragma Ada_2022;
---  ======================================================================
---  Test_Types - Unit tests for Clara.Types
---  ======================================================================
---  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
---  SPDX-License-Identifier: BSD-3-Clause
---  ======================================================================
 
-with Ada.Text_IO;
-with Test_Framework;
-with Clara.Types; use Clara.Types;
+with Ada.Text_IO;           use Ada.Text_IO;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Clara.Types;           use Clara.Types;
 
-procedure Test_Types is
+package body Test_Types is
 
-   use Ada.Text_IO;
+   Total_Count  : Natural := 0;
+   Passed_Count : Natural := 0;
 
-   Total  : Natural := 0;
-   Passed : Natural := 0;
-
-   procedure Check (Name : String; Condition : Boolean) is
+   procedure Assert (Condition : Boolean; Name : String) is
    begin
-      Total := Total + 1;
+      Total_Count := Total_Count + 1;
       if Condition then
-         Passed := Passed + 1;
-         Put_Line ("  PASS: " & Name);
+         Passed_Count := Passed_Count + 1;
+         Put_Line ("  [PASS] " & Name);
       else
-         Put_Line ("  FAIL: " & Name);
+         Put_Line ("  [FAIL] " & Name);
       end if;
-   end Check;
+   end Assert;
 
-begin
-   Put_Line ("");
-   Put_Line ("=== Clara.Types Tests ===");
-   Put_Line ("");
-
-   --  =========================================================================
-   --  Test Bounded String Conversions
-   --  =========================================================================
-
-   Put_Line ("-- Bounded String Conversions --");
-
-   declare
-      NS : constant Name_String := To_Name ("myapp");
+   procedure Run (Total : out Natural; Passed : out Natural) is
    begin
-      Check ("To_Name creates bounded string",
-             Name_Strings.To_String (NS) = "myapp");
-      Check ("To_Name length correct",
-             Name_Strings.Length (NS) = 5);
-   end;
+      Total_Count := 0;
+      Passed_Count := 0;
+      Put_Line ("--- Test_Types ---");
 
-   declare
-      LS : constant Long_Switch_String := To_Long_Switch ("verbose");
-   begin
-      Check ("To_Long_Switch creates bounded string",
-             Long_Switch_Strings.To_String (LS) = "verbose");
-   end;
+      --  Bounded metadata string lengths
+      Assert (Max_Long_Switch = 64, "Max_Long_Switch is 64");
+      Assert (Max_Help = 256, "Max_Help is 256");
+      Assert (Max_Value_Name = 16, "Max_Value_Name is 16");
 
-   declare
-      VN : constant Value_Name_String := To_Value_Name ("FILE");
-   begin
-      Check ("To_Value_Name creates bounded string",
-             Value_Name_Strings.To_String (VN) = "FILE");
-   end;
+      --  Switch_String conversions
+      declare
+         S : constant Switch_String := To_Switch ("verbose");
+      begin
+         Assert
+           (Switch_Strings.To_String (S) = "verbose",
+            "To_Switch round-trips");
+         Assert
+           (Switch_Strings.Length (S) = 7,
+            "Switch_String length is correct");
+      end;
 
-   declare
-      HS : constant Help_String := To_Help ("Enable verbose output");
-   begin
-      Check ("To_Help creates bounded string",
-             Help_Strings.To_String (HS) = "Enable verbose output");
-   end;
+      --  Help_String conversions
+      declare
+         H : constant Help_String := To_Help ("Enable verbose output");
+      begin
+         Assert
+           (Help_Strings.To_String (H) = "Enable verbose output",
+            "To_Help round-trips");
+      end;
 
-   declare
-      VS : constant Value_String := To_Value ("/path/to/file");
-   begin
-      Check ("To_Value creates bounded string",
-             Value_Strings.To_String (VS) = "/path/to/file");
-   end;
+      --  VName_String conversions
+      declare
+         V : constant VName_String := To_VName ("FILE");
+      begin
+         Assert
+           (VName_Strings.To_String (V) = "FILE",
+            "To_VName round-trips");
+      end;
 
-   declare
-      MS : constant Message_String := To_Message ("Error occurred");
-   begin
-      Check ("To_Message creates bounded string",
-             Message_Strings.To_String (MS) = "Error occurred");
-   end;
+      --  Value_String (Unbounded)
+      declare
+         V : constant Value_String := To_Value ("hello world");
+      begin
+         Assert
+           (Value_To_String (V) = "hello world",
+            "To_Value/Value_To_String round-trips");
+      end;
 
-   --  =========================================================================
-   --  Test Length Constants
-   --  =========================================================================
+      --  Null_Value
+      Assert
+        (Value_To_String (Null_Value) = "",
+         "Null_Value is empty string");
 
-   Put_Line ("");
-   Put_Line ("-- Length Constants --");
+      --  Value_List (Vector)
+      declare
+         VL : Value_List;
+      begin
+         Assert (VL.Is_Empty, "Value_List starts empty");
+         Assert (Natural (VL.Length) = 0, "Value_List length is 0");
 
-   pragma Warnings (Off, "condition is always*");
-   Check ("Max_Name_Length is 32", Max_Name_Length = 32);
-   Check ("Max_Long_Switch_Length is 64", Max_Long_Switch_Length = 64);
-   Check ("Max_Value_Name_Length is 16", Max_Value_Name_Length = 16);
-   Check ("Max_Help_Length is 256", Max_Help_Length = 256);
-   Check ("Max_Value_Length is 4096", Max_Value_Length = 4096);
-   Check ("Max_Message_Length is 512", Max_Message_Length = 512);
-   Check ("Max_Arguments is 256", Max_Arguments = 256);
-   Check ("Max_Positional_Values is 4096", Max_Positional_Values = 4096);
-   pragma Warnings (On, "condition is always*");
+         VL.Append (To_Value ("first"));
+         VL.Append (To_Value ("second"));
 
-   --  =========================================================================
-   --  Test Value_Vector
-   --  =========================================================================
+         Assert (not VL.Is_Empty, "Value_List not empty after append");
+         Assert
+           (Natural (VL.Length) = 2,
+            "Value_List length is 2 after 2 appends");
+         Assert
+           (To_String (VL.First_Element) = "first",
+            "First element is correct");
+         Assert
+           (To_String (VL.Last_Element) = "second",
+            "Last element is correct");
+      end;
 
-   Put_Line ("");
-   Put_Line ("-- Value_Vector --");
+      --  Large value strings (no bounded limit)
+      declare
+         Big : constant String (1 .. 8192) := [others => 'X'];
+         V   : constant Value_String := To_Value (Big);
+      begin
+         Assert
+           (Length (V) = 8192,
+            "Value_String handles 8192-char string");
+      end;
 
-   declare
-      V : Value_Vector (10);
-   begin
-      Check ("New vector is empty", Is_Empty (V));
-      Check ("New vector length is 0", Length (V) = 0);
-      Check ("New vector is not full", not Is_Full (V));
-
-      V.Count := 1;
-      V.Items (1) := To_Value ("first");
-
-      Check ("After add, not empty", not Is_Empty (V));
-      Check ("After add, length is 1", Length (V) = 1);
-      Check ("After add, still not full", not Is_Full (V));
-
-      V.Count := 10;
-      Check ("At capacity, is full", Is_Full (V));
-   end;
-
-   --  =========================================================================
-   --  Test Argument_Kind
-   --  =========================================================================
-
-   Put_Line ("");
-   Put_Line ("-- Argument_Kind --");
-
-   declare
-      FK : constant Argument_Kind := Flag_Argument;
-      OK : constant Argument_Kind := Option_Argument;
-      PK : constant Argument_Kind := Positional_Argument;
-   begin
-      pragma Warnings (Off, "condition is always*");
-      Check ("Flag_Argument exists", FK = Flag_Argument);
-      Check ("Option_Argument exists", OK = Option_Argument);
-      Check ("Positional_Argument exists", PK = Positional_Argument);
-      Check ("Kinds are distinct", FK /= OK and OK /= PK and FK /= PK);
-      pragma Warnings (On, "condition is always*");
-   end;
-
-   --  =========================================================================
-   --  Summary
-   --  =========================================================================
-
-   Put_Line ("");
-   Put_Line ("Clara.Types: " & Passed'Image & " /" & Total'Image & " passed");
-
-   Test_Framework.Register_Results (Total, Passed);
+      Total := Total_Count;
+      Passed := Passed_Count;
+   end Run;
 
 end Test_Types;

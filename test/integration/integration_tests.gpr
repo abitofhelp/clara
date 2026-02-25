@@ -3,12 +3,6 @@
 -- ===========================================================================
 -- Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
 -- SPDX-License-Identifier: BSD-3-Clause
---
--- Purpose:
---   Integration tests for Clara.Application.Parse function.
---   Creates test executables that are run with specific command lines.
---
--- Build: alr exec -- gprbuild -P test/integration/integration_tests.gpr
 -- ===========================================================================
 
 with "../../clara.gpr";
@@ -20,21 +14,7 @@ project Integration_Tests is
    for Exec_Dir use "../bin";
    for Create_Missing_Dirs use "True";
 
-   --  Test executables - each tests a specific parsing scenario
-   for Main use (
-      "integration_runner.adb",
-      "test_parse_flags.adb",
-      "test_parse_options.adb",
-      "test_parse_positionals.adb",
-      "test_parse_errors.adb",
-      "test_parse_help.adb",
-      "test_option_value.adb",
-      "test_positional_as_switch.adb",
-      "test_multi_positional.adb",
-      "test_no_positional.adb",
-      "test_parse_commands.adb",
-      "test_multi_option.adb"
-   );
+   for Main use ("integration_runner.adb");
 
    package Compiler renames Clara.Compiler;
 

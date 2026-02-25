@@ -1,170 +1,161 @@
 pragma Ada_2022;
---  ======================================================================
---  Test_Errors - Unit tests for Clara.Errors
---  ======================================================================
---  Copyright (c) 2025 Michael Gardner, A Bit of Help, Inc.
---  SPDX-License-Identifier: BSD-3-Clause
---  ======================================================================
 
-with Ada.Text_IO;
-with Test_Framework;
-with Clara.Errors; use Clara.Errors;
-with Clara.Types;  use Clara.Types;
+with Ada.Text_IO;           use Ada.Text_IO;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
+with Clara.Errors;          use Clara.Errors;
 
-procedure Test_Errors is
+package body Test_Errors is
 
-   use Ada.Text_IO;
+   Total_Count  : Natural := 0;
+   Passed_Count : Natural := 0;
 
-   Total  : Natural := 0;
-   Passed : Natural := 0;
-
-   procedure Check (Name : String; Condition : Boolean) is
+   procedure Assert (Condition : Boolean; Name : String) is
    begin
-      Total := Total + 1;
+      Total_Count := Total_Count + 1;
       if Condition then
-         Passed := Passed + 1;
-         Put_Line ("  PASS: " & Name);
+         Passed_Count := Passed_Count + 1;
+         Put_Line ("  [PASS] " & Name);
       else
-         Put_Line ("  FAIL: " & Name);
+         Put_Line ("  [FAIL] " & Name);
       end if;
-   end Check;
+   end Assert;
 
-begin
-   Put_Line ("");
-   Put_Line ("=== Clara.Errors Tests ===");
-   Put_Line ("");
-
-   --  =========================================================================
-   --  Test Make_Error
-   --  =========================================================================
-
-   Put_Line ("-- Make_Error --");
-
-   declare
-      E : constant Parse_Error :=
-        Make_Error (Unknown_Switch, "Test message", "test context");
+   procedure Run (Total : out Natural; Passed : out Natural) is
    begin
-      Check ("Make_Error sets Kind", E.Kind = Unknown_Switch);
-      Check ("Make_Error sets Message",
-             Message_Strings.To_String (E.Message) = "Test message");
-      Check ("Make_Error sets Context",
-             Value_Strings.To_String (E.Context) = "test context");
-   end;
+      Total_Count := 0;
+      Passed_Count := 0;
+      Put_Line ("--- Test_Errors ---");
 
-   declare
-      E : constant Parse_Error := Make_Error (Internal_Error, "No context");
-   begin
-      Check ("Make_Error with empty context",
-             Value_Strings.Length (E.Context) = 0);
-   end;
+      --  Make_Error
+      declare
+         E : constant Parse_Error :=
+           Make_Error (Unknown_Switch, "test msg", "--foo");
+      begin
+         Assert (E.Kind = Unknown_Switch, "Make_Error sets Kind");
+         Assert
+           (To_String (E.Message) = "test msg",
+            "Make_Error sets Message");
+         Assert
+           (To_String (E.Context) = "--foo",
+            "Make_Error sets Context");
+      end;
 
-   --  =========================================================================
-   --  Test Error Factory Functions
-   --  =========================================================================
+      --  Unknown_Switch_Error
+      declare
+         E : constant Parse_Error := Unknown_Switch_Error ("--bar");
+      begin
+         Assert
+           (E.Kind = Unknown_Switch,
+            "Unknown_Switch_Error kind");
+         Assert
+           (To_String (E.Context) = "--bar",
+            "Unknown_Switch_Error context");
+      end;
 
-   Put_Line ("");
-   Put_Line ("-- Error Factory Functions --");
+      --  Missing_Value_Error
+      declare
+         E : constant Parse_Error := Missing_Value_Error ("--output");
+      begin
+         Assert (E.Kind = Missing_Value, "Missing_Value_Error kind");
+      end;
 
-   declare
-      E : constant Parse_Error := Unknown_Switch_Error ("--unknown");
-   begin
-      Check ("Unknown_Switch_Error Kind", E.Kind = Unknown_Switch);
-      Check ("Unknown_Switch_Error Context",
-             Value_Strings.To_String (E.Context) = "--unknown");
-   end;
+      --  Missing_Required_Error
+      declare
+         E : constant Parse_Error := Missing_Required_Error ("config");
+      begin
+         Assert
+           (E.Kind = Missing_Required,
+            "Missing_Required_Error kind");
+         Assert
+           (To_String (E.Context) = "config",
+            "Missing_Required_Error context");
+      end;
 
-   declare
-      E : constant Parse_Error := Missing_Value_Error ("--output");
-   begin
-      Check ("Missing_Value_Error Kind", E.Kind = Missing_Value);
-      Check ("Missing_Value_Error Context",
-             Value_Strings.To_String (E.Context) = "--output");
-   end;
+      --  Too_Many_Values_Error
+      declare
+         E : constant Parse_Error := Too_Many_Values_Error (10);
+      begin
+         Assert
+           (E.Kind = Too_Many_Values,
+            "Too_Many_Values_Error kind");
+      end;
 
-   declare
-      E : constant Parse_Error := Missing_Required_Error ("config");
-   begin
-      Check ("Missing_Required_Error Kind", E.Kind = Missing_Required);
-      Check ("Missing_Required_Error Context",
-             Value_Strings.To_String (E.Context) = "config");
-   end;
+      --  Command_Mismatch_Error
+      declare
+         E : constant Parse_Error :=
+           Command_Mismatch_Error ("-y", "write");
+      begin
+         Assert
+           (E.Kind = Command_Mismatch,
+            "Command_Mismatch_Error kind");
+         Assert
+           (To_String (E.Context) = "-y",
+            "Command_Mismatch_Error context");
+      end;
 
-   declare
-      E : constant Parse_Error := Too_Many_Values_Error (10);
-   begin
-      Check ("Too_Many_Values_Error Kind", E.Kind = Too_Many_Values);
-   end;
+      --  Help_Requested_Error
+      declare
+         E : constant Parse_Error := Help_Requested_Error;
+      begin
+         Assert (E.Kind = Help_Requested, "Help_Requested_Error kind");
+         Assert
+           (Length (E.Message) = 0,
+            "Help_Requested has empty message");
+      end;
 
-   declare
-      E : constant Parse_Error := Help_Requested_Error;
-   begin
-      Check ("Help_Requested_Error Kind", E.Kind = Help_Requested);
-   end;
+      --  Version_Requested_Error
+      declare
+         E : constant Parse_Error := Version_Requested_Error;
+      begin
+         Assert
+           (E.Kind = Version_Requested,
+            "Version_Requested_Error kind");
+      end;
 
-   declare
-      E : constant Parse_Error := Version_Requested_Error;
-   begin
-      Check ("Version_Requested_Error Kind", E.Kind = Version_Requested);
-   end;
+      --  Is_Graceful_Exit
+      Assert
+        (Is_Graceful_Exit (Help_Requested_Error),
+         "Help is graceful exit");
+      Assert
+        (Is_Graceful_Exit (Version_Requested_Error),
+         "Version is graceful exit");
+      Assert
+        (not Is_Graceful_Exit (Unknown_Switch_Error ("--x")),
+         "Unknown_Switch is not graceful exit");
 
-   --  =========================================================================
-   --  Test Error Predicates
-   --  =========================================================================
+      --  Is_User_Error
+      Assert
+        (Is_User_Error (Unknown_Switch_Error ("--x")),
+         "Unknown_Switch is user error");
+      Assert
+        (Is_User_Error (Missing_Value_Error ("--o")),
+         "Missing_Value is user error");
+      Assert
+        (not Is_User_Error (Help_Requested_Error),
+         "Help_Requested is not user error");
 
-   Put_Line ("");
-   Put_Line ("-- Error Predicates --");
+      --  Format
+      declare
+         E1 : constant Parse_Error :=
+           Make_Error (Unknown_Switch, "Bad switch", "--foo");
+         E2 : constant Parse_Error :=
+           Make_Error (Internal_Error, "Something broke");
+         E3 : constant Parse_Error :=
+           (Kind => None, others => <>);
+      begin
+         Assert
+           (Format (E1) = "Bad switch: --foo",
+            "Format with context");
+         Assert
+           (Format (E2) = "Something broke",
+            "Format without context");
+         Assert
+           (Format (E3) = "",
+            "Format of None error is empty");
+      end;
 
-   Check ("Help is graceful exit",
-          Is_Graceful_Exit (Help_Requested_Error));
-   Check ("Version is graceful exit",
-          Is_Graceful_Exit (Version_Requested_Error));
-   Check ("Unknown_Switch is not graceful exit",
-          not Is_Graceful_Exit (Unknown_Switch_Error ("x")));
-
-   Check ("Unknown_Switch is user error",
-          Is_User_Error (Unknown_Switch_Error ("x")));
-   Check ("Missing_Value is user error",
-          Is_User_Error (Missing_Value_Error ("x")));
-   Check ("Help is not user error",
-          not Is_User_Error (Help_Requested_Error));
-
-   --  =========================================================================
-   --  Test Format
-   --  =========================================================================
-
-   Put_Line ("");
-   Put_Line ("-- Format --");
-
-   declare
-      E : constant Parse_Error :=
-        (Kind    => None,
-         Message => Message_Strings.Null_Bounded_String,
-         Context => Value_Strings.Null_Bounded_String);
-   begin
-      Check ("Format None returns empty", Format (E) = "");
-   end;
-
-   declare
-      E : constant Parse_Error := Unknown_Switch_Error ("--bad");
-   begin
-      Check ("Format with context includes colon",
-             Format (E) = "Unknown switch: --bad");
-   end;
-
-   declare
-      E : constant Parse_Error := Make_Error (Internal_Error, "Internal fail");
-   begin
-      Check ("Format without context excludes colon",
-             Format (E) = "Internal fail");
-   end;
-
-   --  =========================================================================
-   --  Summary
-   --  =========================================================================
-
-   Put_Line ("");
-   Put_Line ("Clara.Errors: " & Passed'Image & " /" & Total'Image & " passed");
-
-   Test_Framework.Register_Results (Total, Passed);
+      Total := Total_Count;
+      Passed := Passed_Count;
+   end Run;
 
 end Test_Errors;

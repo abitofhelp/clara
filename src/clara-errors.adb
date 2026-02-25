@@ -6,9 +6,7 @@ pragma Ada_2022;
 --  SPDX-License-Identifier: BSD-3-Clause
 --  ===========================================================================
 
-package body Clara.Errors
-  with SPARK_Mode => On
-is
+package body Clara.Errors is
 
    --  ==========================================================================
    --  Error Constructors
@@ -22,8 +20,8 @@ is
    begin
       return
         (Kind    => Kind,
-         Message => To_Message (Message),
-         Context => To_Value (Context));
+         Message => To_Unbounded_String (Message),
+         Context => To_Unbounded_String (Context));
    end Make_Error;
 
    function Unknown_Switch_Error (Switch : String) return Parse_Error is
@@ -46,16 +44,15 @@ is
    begin
       return Make_Error
         (Kind    => Missing_Required,
-         Message => "Required option not provided",
+         Message => "Required option was not provided",
          Context => Name);
    end Missing_Required_Error;
 
    function Too_Many_Values_Error (Max : Natural) return Parse_Error is
-      Max_Str : constant String := Natural'Image (Max);
    begin
       return Make_Error
         (Kind    => Too_Many_Values,
-         Message => "Too many arguments (max:" & Max_Str & ")",
+         Message => "Too many arguments (max:" & Natural'Image (Max) & ")",
          Context => "");
    end Too_Many_Values_Error;
 
@@ -75,16 +72,16 @@ is
    begin
       return
         (Kind    => Help_Requested,
-         Message => Message_Strings.Null_Bounded_String,
-         Context => Value_Strings.Null_Bounded_String);
+         Message => Null_Unbounded_String,
+         Context => Null_Unbounded_String);
    end Help_Requested_Error;
 
    function Version_Requested_Error return Parse_Error is
    begin
       return
         (Kind    => Version_Requested,
-         Message => Message_Strings.Null_Bounded_String,
-         Context => Value_Strings.Null_Bounded_String);
+         Message => Null_Unbounded_String,
+         Context => Null_Unbounded_String);
    end Version_Requested_Error;
 
    --  ==========================================================================
@@ -92,8 +89,6 @@ is
    --  ==========================================================================
 
    function Format (E : Parse_Error) return String is
-      use Message_Strings;
-      use Value_Strings;
    begin
       if E.Kind = None then
          return "";

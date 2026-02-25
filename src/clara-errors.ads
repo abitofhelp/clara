@@ -9,21 +9,12 @@ pragma Ada_2022;
 --    Defines error types for command-line argument parsing.
 --    Designed for use with Functional.Result monad.
 --
---  Usage:
---    Parse_Result : Clara.Parse_Result.Result := Clara.Parse;
---    if Parse_Result.Is_Error then
---       case Parse_Result.Error.Kind is
---          when Unknown_Switch => ...
---          when Missing_Value => ...
---       end case;
---    end if;
---
 --  ===========================================================================
 
-with Clara.Types; use Clara.Types;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 package Clara.Errors
-  with Preelaborate, SPARK_Mode => On
+  with Preelaborate
 is
 
    --  ==========================================================================
@@ -33,10 +24,10 @@ is
    type Error_Kind is
      (None,              --  No error (for default initialization)
       Unknown_Switch,    --  Unrecognized switch (e.g., --unknown)
-      Missing_Value,     --  Option requires value but none provided
+      Missing_Value,     --  Option requires value but none was provided
       Invalid_Value,     --  Value failed validation
       Duplicate_Switch,  --  Switch specified multiple times when not allowed
-      Missing_Required,  --  Required option not provided
+      Missing_Required,  --  Required option was not provided
       Too_Many_Values,   --  Exceeded maximum positional arguments
       Command_Mismatch,  --  Flag/option used with wrong command
       Help_Requested,    --  --help was specified (graceful exit)
@@ -46,34 +37,23 @@ is
    --  ==========================================================================
    --  Parse Error Record
    --  ==========================================================================
-   --
-   --  A structured error containing:
-   --    - Kind: The category of error
-   --    - Message: Human-readable description
-   --    - Context: The problematic argument or value
-   --
-   --  Example:
-   --    (Kind => Unknown_Switch,
-   --     Message => "Unknown switch",
-   --     Context => "--foobar")
 
    type Parse_Error is record
-      Kind    : Error_Kind := None;
-      Message : Message_String := Message_Strings.Null_Bounded_String;
-      Context : Value_String := Value_Strings.Null_Bounded_String;
+      Kind    : Error_Kind       := None;
+      Message : Unbounded_String := Null_Unbounded_String;
+      Context : Unbounded_String := Null_Unbounded_String;
    end record;
 
    --  ==========================================================================
    --  Error Constructors
    --  ==========================================================================
-   --  Factory functions for creating errors with proper context.
 
    function Make_Error
      (Kind    : Error_Kind;
       Message : String;
       Context : String := "") return Parse_Error
    with
-     Pre => Kind /= None,
+     Pre  => Kind /= None,
      Post => Make_Error'Result.Kind = Kind;
 
    function Unknown_Switch_Error (Switch : String) return Parse_Error
@@ -104,19 +84,16 @@ is
 
    function Is_Graceful_Exit (E : Parse_Error) return Boolean
      is (E.Kind in Help_Requested | Version_Requested);
-   --  True if error represents user-requested exit (not a real error)
 
    function Is_User_Error (E : Parse_Error) return Boolean
      is (E.Kind in Unknown_Switch | Missing_Value | Invalid_Value |
                    Duplicate_Switch | Missing_Required | Too_Many_Values |
                    Command_Mismatch);
-   --  True if error is due to user input
 
    --  ==========================================================================
    --  Error Formatting
    --  ==========================================================================
 
    function Format (E : Parse_Error) return String;
-   --  Format error for display to user
 
 end Clara.Errors;
