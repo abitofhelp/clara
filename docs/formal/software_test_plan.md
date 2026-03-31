@@ -1,4 +1,4 @@
-# Software Test Guide (STG)
+# Software Test Plan (STP)
 
 **Project:** CLARA - Command Line Arguments for Reliable Applications
 **Version:** 1.0.0<br>
@@ -14,7 +14,7 @@
 
 ### 1.1 Purpose
 
-This Software Test Guide (STG) defines the test strategy, test cases, and verification approach for **CLARA**, a type-safe command-line argument parsing library for Ada 2022.
+This Software Test Plan (STP) defines the test strategy, test cases, and verification approach for **CLARA**, a type-safe command-line argument parsing library for Ada 2022.
 
 ### 1.2 Scope
 
