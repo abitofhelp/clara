@@ -8,6 +8,12 @@
 // Modification Policy:
 //   - Edit this file for project-specific STG content.
 //   - Keep shared presentation logic in core.typ.
+// Table Ordering:
+//   Sort any table whose rows a reader might scan to locate a specific
+//   entry — definitions, acronyms, constraints, packages, interfaces,
+//   and similar reference tables.  Sort alphabetically by the first
+//   column.  Tables with an inherent sequence (requirement IDs within
+//   a section, change history, workflow steps) retain their logical order.
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
@@ -92,11 +98,12 @@ This document covers:
 
 == Coverage Requirements
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto),
   table.header([*Metric*], [*Target*]),
-  [Line Coverage], [≥ 90%],
   [Branch Coverage], [≥ 85%],
+  [Line Coverage], [≥ 90%],
   [MC/DC Coverage], [≥ 80% (SPARK packages)],
 )
 
@@ -124,11 +131,12 @@ test/
 
 == Build/Test Projects
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Project*], [*Purpose*]),
-  [`test/unit/unit_tests.gpr`], [Builds unit test executables.],
   [`test/integration/integration_tests.gpr`], [Builds integration test executables.],
+  [`test/unit/unit_tests.gpr`], [Builds unit test executables.],
 )
 
 = Test Execution
@@ -253,13 +261,14 @@ make spark-prove
 
 === Proof Objectives
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Objective*], [*Verification*]),
+  [Array bounds], [Index checks proven.],
+  [Bounded string access], [Range checks proven.],
   [No runtime errors], [GNATprove level 2.],
   [No uninitialized reads], [Flow analysis.],
-  [Bounded string access], [Range checks proven.],
-  [Array bounds], [Index checks proven.],
 )
 
 = Traceability

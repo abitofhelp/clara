@@ -8,6 +8,12 @@
 // Modification Policy:
 //   - Edit this file for project-specific SRS content.
 //   - Keep shared presentation logic in core.typ.
+// Table Ordering:
+//   Sort any table whose rows a reader might scan to locate a specific
+//   entry — definitions, acronyms, constraints, packages, interfaces,
+//   and similar reference tables.  Sort alphabetically by the first
+//   column.  Tables with an inherent sequence (requirement IDs within
+//   a section, change history, workflow steps) retain their logical order.
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
@@ -67,16 +73,17 @@ This Software Requirements Specification (SRS) defines the functional and non-fu
 
 == Definitions and Acronyms
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Term*], [*Definition*]),
   [CLARA], [Command Line Arguments for Reliable Applications.],
   [Flag], [Boolean switch (e.g., `-v`, `--verbose`).],
+  [Generic Instantiation], [Ada compile-time polymorphism mechanism.],
   [Option], [Switch with a value (e.g., `-o file`, `--output=file`).],
+  [Option Monad], [Functional pattern for optional values.],
   [Positional], [Non-switch arguments (e.g., file paths).],
   [Result Monad], [Functional pattern for error handling without exceptions.],
-  [Option Monad], [Functional pattern for optional values.],
-  [Generic Instantiation], [Ada compile-time polymorphism mechanism.],
 )
 
 == References
@@ -146,13 +153,14 @@ This Software Requirements Specification (SRS) defines the functional and non-fu
 
 == Constraints
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Constraint*], [*Rationale*]),
-  [No Heap Allocation], [SPARK compatibility and embedded system safety.],
-  [Stateless Parsing], [Avoids GNAT.Command_Line state isolation issues in standalone libraries.],
   [Generic Instantiation], [Compile-time type safety, consistent with Functional library.],
+  [No Heap Allocation], [SPARK compatibility and embedded system safety.],
   [No String Lookups], [Typos caught at compile time, not runtime.],
+  [Stateless Parsing], [Avoids GNAT.Command_Line state isolation issues in standalone libraries.],
 )
 
 = Interface Requirements

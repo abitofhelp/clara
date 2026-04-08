@@ -8,6 +8,12 @@
 // Modification Policy:
 //   - Edit this file for project-specific SDS content.
 //   - Keep shared presentation logic in core.typ.
+// Table Ordering:
+//   Sort any table whose rows a reader might scan to locate a specific
+//   entry — definitions, acronyms, constraints, packages, interfaces,
+//   and similar reference tables.  Sort alphabetically by the first
+//   column.  Tables with an inherent sequence (requirement IDs within
+//   a section, change history, workflow steps) retain their logical order.
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
@@ -94,14 +100,15 @@ Clara (root package)
 
 CLARA uses Ada generic instantiation rather than a builder pattern. This is consistent with the Functional library and provides compile-time type safety.
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr, 1fr),
   table.header([*Aspect*], [*Builder Pattern*], [*Generic Instantiation*]),
-  [Type Safety], [Runtime (string lookups)], [Compile-time (packages)],
-  [Error Detection], [Runtime errors], [Compile-time errors],
-  [SPARK Compatibility], [Poor (heap allocation)], [Good (no heap)],
   [Ada Idiom], [Borrowed from OOP], [Native Ada pattern],
   [Consistency], [Different from Functional], [Same as Functional],
+  [Error Detection], [Runtime errors], [Compile-time errors],
+  [SPARK Compatibility], [Poor (heap allocation)], [Good (no heap)],
+  [Type Safety], [Runtime (string lookups)], [Compile-time (packages)],
 )
 
 == Integration with Functional Library
@@ -303,13 +310,14 @@ Print: "Arguments:"
 
 *Decision:* Use `Ada.Command_Line` instead of `GNAT.Command_Line`.
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr, 1fr),
   table.header([*Aspect*], [*GNAT.Command_Line*], [*Ada.Command_Line*]),
-  [State], [Mutable, elaboration-time], [Stateless],
-  [Standalone Libraries], [State isolation issues on macOS], [Works correctly],
-  [Standard], [GNAT-specific], [Standard Ada],
   [SPARK], [Not compatible], [Compatible],
+  [Standard], [GNAT-specific], [Standard Ada],
+  [Standalone Libraries], [State isolation issues on macOS], [Works correctly],
+  [State], [Mutable, elaboration-time], [Stateless],
 )
 
 *Issue encountered:* `GNAT.Command_Line` with `Library_Standalone use "standard"` causes command-line state to be isolated in a separate elaboration context on macOS. Arguments are not visible to code inside standalone libraries.
@@ -364,13 +372,14 @@ package Message is new Commit.Option ('m', "message", "MSG", "...");
 
 == Extension Points
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, 1fr),
   table.header([*Extension*], [*Mechanism*]),
   [Custom validators], [Generic formal function parameter.],
-  [Value transformers], [Generic formal function parameter.],
   [Help formatters], [Abstract interface + implementations.],
   [Shell completions], [Additional generic procedures.],
+  [Value transformers], [Generic formal function parameter.],
 )
 
 = Design Decisions
