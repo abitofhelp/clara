@@ -17,7 +17,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
-#import "core.typ": change_history_table, formal_doc
+#import "core.typ": formal_doc
 
 #let doc = (
   authors: ("Michael Gardner",),
@@ -326,14 +326,15 @@ None. The library is hardware-agnostic.
   [NFR-SPARK-003], [Use bounded data structures only.],
 )
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto, 1fr),
   table.header([*Package*], [*SPARK_Mode*], [*Rationale*]),
   [Clara], [On], [Root package, pure.],
-  [Clara.Types], [On], [Core type definitions, bounded strings.],
-  [Clara.Errors], [On], [Error types, pure.],
-  [Clara.Version], [On], [Constants only.],
   [Clara.Application (core)], [On], [Generic parsing logic.],
+  [Clara.Errors], [On], [Error types, pure.],
+  [Clara.Types], [On], [Core type definitions, bounded strings.],
+  [Clara.Version], [On], [Constants only.],
 )
 
 == Maintainability (NFR-MAINT)

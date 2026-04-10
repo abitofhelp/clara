@@ -17,7 +17,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
-#import "core.typ": formal_doc, change_history_table
+#import "core.typ": formal_doc
 
 #let doc = (
   authors: ("Michael Gardner",),
@@ -346,14 +346,15 @@ Parse returns `Result[Unit, Parse_Error]`, integrating with the Functional libra
 
 == Module Assessment
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto, 1fr),
   table.header([*Package*], [*SPARK*], [*Notes*]),
   [Clara], [On], [Root package, pure.],
-  [Clara.Types], [On], [Bounded type definitions.],
-  [Clara.Errors], [On], [Error type definitions.],
-  [Clara.Version], [On], [Constants only.],
   [Clara.Application (core)], [On], [Generic parsing logic.],
+  [Clara.Errors], [On], [Error type definitions.],
+  [Clara.Types], [On], [Bounded type definitions.],
+  [Clara.Version], [On], [Constants only.],
 )
 
 = Future Extensibility

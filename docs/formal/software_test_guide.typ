@@ -17,7 +17,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ============================================================================
 
-#import "core.typ": formal_doc, change_history_table
+#import "core.typ": formal_doc
 
 #let doc = (
   title: "Software Test Guide",
@@ -249,14 +249,15 @@ make spark-prove
 
 === Packages Under SPARK
 
+// Sort rows alphabetically by the first column.
 #table(
   columns: (auto, auto, 1fr),
   table.header([*Package*], [*SPARK_Mode*], [*Proof Level*]),
   [Clara], [On], [Full.],
-  [Clara.Types], [On], [Full.],
-  [Clara.Errors], [On], [Full.],
-  [Clara.Version], [On], [Full.],
   [Clara.Application (core)], [On], [Full.],
+  [Clara.Errors], [On], [Full.],
+  [Clara.Types], [On], [Full.],
+  [Clara.Version], [On], [Full.],
 )
 
 === Proof Objectives
