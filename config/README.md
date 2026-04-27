@@ -1,10 +1,11 @@
 # Clara Library - Embedded Restrictions
 
-**Version:** 1.0.0<br>
-**Date:** 2025-12-29<br>
+**Doc Version:** 1.0.0<br>
+**Applies to clara:** ^1.0<br>
+**Last Updated:** 2026-04-26<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Copyright:** © 2026 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released
 
 ## Overview

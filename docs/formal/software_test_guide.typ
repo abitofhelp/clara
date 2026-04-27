@@ -24,11 +24,12 @@
   project_name: "CLARA",
   authors: ("Michael Gardner",),
   version: "0.1.0",
+  applies_to: "^1.0",
   status: "Draft",
-  status_date: "2025-12-29",
+  status_date: "2026-04-26",
   spdx_license: "BSD-3-Clause",
   license_file: "See the LICENSE file in the project root",
-  copyright: "© 2025 Michael Gardner, A Bit of Help, Inc.",
+  copyright: "© 2026 Michael Gardner, A Bit of Help, Inc.",
 )
 
 #let profile = (
