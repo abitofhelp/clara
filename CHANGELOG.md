@@ -18,9 +18,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **`Clara.CLI` is now parse-only** (no parse-time callbacks).
+  Help and version are surfaced exclusively as outcome signals
+  on `Parse_Outcome.Result` (`Error_Value.Kind in
+  Help_Requested | Version_Requested`).  Consumers detect these
+  after `Parse` returns and render help / version text
+  themselves; parse-time control flow is decoupled from
+  consumer rendering.  Pure parse → outcome semantics simplify
+  consumer integration and remove a mid-parse side-effect
+  surprise.
+
 ### Deprecated
 
 ### Removed
+
+- **`Show_Help` generic formal procedure** removed from
+  `Clara.CLI`.  Previously, encountering `--help` or `-h`
+  during parse would invoke a consumer-supplied `Show_Help`
+  callback in addition to returning `Help_Requested`.  The
+  callback is no longer invoked; `Help_Requested` (and
+  `Version_Requested` for `--version`) are the sole signals.
+  **Migration**: drop `Show_Help => ...` from your
+  `Clara.CLI` instantiation; render help / version after
+  `Parse` returns by inspecting `Error_Value.Kind`.
 
 ### Fixed
 

@@ -31,21 +31,13 @@ package body Test_CLI is
    type Test_Opt is (Workers, Output, Config, Exclude);
    type Test_Pos is (Paths);
 
-   Help_Called : Boolean := False;
-
-   procedure Test_Help is
-   begin
-      Help_Called := True;
-   end Test_Help;
-
    package CLI is new Clara.CLI
      (Command_Id      => Test_Cmd,
       Flag_Id         => Test_Flag,
       Option_Id       => Test_Opt,
       Positional_Id   => Test_Pos,
       App_Name        => "testapp",
-      App_Description => "Test application",
-      Show_Help       => Test_Help);
+      App_Description => "Test application");
 
    Test_Config : constant CLI.CLI_Config :=
      (Commands =>
@@ -436,41 +428,33 @@ package body Test_CLI is
       end;
 
       --  ===== Help request (long) =====
+      --  Show_Help mid-parse callback was removed; help is now a pure
+      --  outcome signal via Help_Requested error kind.
       declare
          Args : constant CLI.Argument_Array := [1 => A ("--help")];
+         R : constant CLI.Parse_Outcome.Result :=
+           CLI.Parse (Test_Config, Args);
       begin
-         Help_Called := False;
-         declare
-            R : constant CLI.Parse_Outcome.Result :=
-              CLI.Parse (Test_Config, Args);
-         begin
-            Assert (not R.Is_Ok, "--help returns error");
-            if not R.Is_Ok then
-               Assert
-                 (R.Error_Value.Kind = Help_Requested,
-                  "--help: Help_Requested");
-            end if;
-            Assert (Help_Called, "--help calls Show_Help callback");
-         end;
+         Assert (not R.Is_Ok, "--help returns error");
+         if not R.Is_Ok then
+            Assert
+              (R.Error_Value.Kind = Help_Requested,
+               "--help: Help_Requested");
+         end if;
       end;
 
       --  ===== Help request (short) =====
       declare
          Args : constant CLI.Argument_Array := [1 => A ("-h")];
+         R : constant CLI.Parse_Outcome.Result :=
+           CLI.Parse (Test_Config, Args);
       begin
-         Help_Called := False;
-         declare
-            R : constant CLI.Parse_Outcome.Result :=
-              CLI.Parse (Test_Config, Args);
-         begin
-            Assert (not R.Is_Ok, "-h returns error");
-            if not R.Is_Ok then
-               Assert
-                 (R.Error_Value.Kind = Help_Requested,
-                  "-h: Help_Requested");
-            end if;
-            Assert (Help_Called, "-h calls Show_Help callback");
-         end;
+         Assert (not R.Is_Ok, "-h returns error");
+         if not R.Is_Ok then
+            Assert
+              (R.Error_Value.Kind = Help_Requested,
+               "-h: Help_Requested");
+         end if;
       end;
 
       --  ===== Version request =====
@@ -604,18 +588,14 @@ package body Test_CLI is
       --  ===== Is_Graceful_Exit predicate on parse errors =====
       declare
          Args : constant CLI.Argument_Array := [1 => A ("--help")];
+         R : constant CLI.Parse_Outcome.Result :=
+           CLI.Parse (Test_Config, Args);
       begin
-         Help_Called := False;
-         declare
-            R : constant CLI.Parse_Outcome.Result :=
-              CLI.Parse (Test_Config, Args);
-         begin
-            if not R.Is_Ok then
-               Assert
-                 (Is_Graceful_Exit (R.Error_Value),
-                  "Help error Is_Graceful_Exit");
-            end if;
-         end;
+         if not R.Is_Ok then
+            Assert
+              (Is_Graceful_Exit (R.Error_Value),
+               "Help error Is_Graceful_Exit");
+         end if;
       end;
 
       Total := Total_Count;
