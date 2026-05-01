@@ -407,9 +407,11 @@ package body Clara.CLI is
                         then Rest (Equals_Pos + 1 .. Rest'Last)
                         else "");
                   begin
-                     --  Built-in: --help, --version
+                     --  Built-in: --help, --version.  Both surface as
+                     --  pure outcome signals; consumers render help /
+                     --  version after Parse returns.  No mid-parse
+                     --  callback (the Show_Help formal was removed).
                      if Name = "help" then
-                        Show_Help;
                         return Parse_Outcome.New_Error
                           (Help_Requested_Error);
                      elsif Name = "version" then
@@ -490,9 +492,10 @@ package body Clara.CLI is
                      declare
                         C : constant Character := Arg (I);
                      begin
-                        --  Built-in: -h
+                        --  Built-in: -h (matches the long --help
+                        --  built-in; pure outcome signal, no mid-parse
+                        --  callback).
                         if C = 'h' then
-                           Show_Help;
                            return Parse_Outcome.New_Error
                              (Help_Requested_Error);
                         end if;

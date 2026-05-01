@@ -28,6 +28,15 @@ pragma Ada_2022;
 --    Config : constant CLI.CLI_Config := ( ... );
 --    Result : constant CLI.Parse_Outcome.Result := CLI.Parse (Config);
 --
+--  Help / version semantics:
+--    `--help` / `-h` produce `Parse_Outcome.New_Error` with kind
+--    `Help_Requested`; `--version` produces `Version_Requested`.
+--    Parse is side-effect-free with respect to user-supplied
+--    callbacks — consumers detect these outcomes after Parse
+--    returns and render help / version text themselves.  No
+--    Show_Help formal procedure: rendering is the consumer's
+--    responsibility, decoupled from parse-time control flow.
+--
 --  ===========================================================================
 
 with Clara.Types;  use Clara.Types;
@@ -40,10 +49,13 @@ generic
    type Flag_Id       is (<>);
    type Option_Id     is (<>);
    type Positional_Id is (<>);
-   App_Name        : String;  --  Used by consumer's Show_Help
-   App_Description : String;  --  Used by consumer's Show_Help
+   App_Name        : String;
+   App_Description : String;
    pragma Unreferenced (App_Name, App_Description);
-   with procedure Show_Help is null;
+   --  App_Name / App_Description are kept as generic formals so consumers
+   --  can document branding inside their own help renderers.  Clara itself
+   --  does not consume them (Show_Help was removed in favor of pure
+   --  outcome-driven help / version handling).
 package Clara.CLI is
 
    --  ==========================================================================
