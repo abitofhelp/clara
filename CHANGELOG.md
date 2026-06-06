@@ -14,41 +14,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-
-### Changed
-
-- **`Clara.CLI` is now parse-only** (no parse-time callbacks).
-  Help and version are surfaced exclusively as outcome signals
-  on `Parse_Outcome.Result` (`Error_Value.Kind in
-  Help_Requested | Version_Requested`).  Consumers detect these
-  after `Parse` returns and render help / version text
-  themselves; parse-time control flow is decoupled from
-  consumer rendering.  Pure parse → outcome semantics simplify
-  consumer integration and remove a mid-parse side-effect
-  surprise.
-
-### Deprecated
-
-### Removed
-
-- **`Show_Help` generic formal procedure** removed from
-  `Clara.CLI`.  Previously, encountering `--help` or `-h`
-  during parse would invoke a consumer-supplied `Show_Help`
-  callback in addition to returning `Help_Requested`.  The
-  callback is no longer invoked; `Help_Requested` (and
-  `Version_Requested` for `--version`) are the sole signals.
-  **Migration**: drop `Show_Help => ...` from your
-  `Clara.CLI` instantiation; render help / version after
-  `Parse` returns by inspecting `Error_Value.Kind`.
-
-### Fixed
-
-### Security
+No unreleased changes yet.
 
 ---
 
-## [1.0.0] - 2025-12-29
+## [1.0.0] - <YYYY-MM-DD pending tag>
 
 **Test Coverage:** 79 unit + 0 integration + 0 examples = 79 total
 
@@ -67,3 +37,27 @@ _Initial release of CLARA._
 - SPARK-compatible design (no heap allocation, stateless parsing)
 - Comprehensive test suite with 95% code coverage
 - Full documentation: SRS, SDS, STG, quick start guide
+
+### Changed
+
+- **`Clara.CLI` is now parse-only** (no parse-time callbacks).
+  Help and version are surfaced exclusively as outcome signals
+  on `Parse_Outcome.Result` (`Error_Value.Kind in
+  Help_Requested | Version_Requested`).  Consumers detect these
+  after `Parse` returns and render help / version text
+  themselves; parse-time control flow is decoupled from
+  consumer rendering.  Pure parse → outcome semantics simplify
+  consumer integration and remove a mid-parse side-effect
+  surprise.
+
+### Removed
+
+- **`Show_Help` generic formal procedure** removed from
+  `Clara.CLI`.  Previously, encountering `--help` or `-h`
+  during parse would invoke a consumer-supplied `Show_Help`
+  callback in addition to returning `Help_Requested`.  The
+  callback is no longer invoked; `Help_Requested` (and
+  `Version_Requested` for `--version`) are the sole signals.
+  **Migration**: drop `Show_Help => ...` from your
+  `Clara.CLI` instantiation; render help / version after
+  `Parse` returns by inspecting `Error_Value.Kind`.
