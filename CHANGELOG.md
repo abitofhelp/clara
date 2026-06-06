@@ -1,10 +1,10 @@
 # Changelog
 
 **Version:** 1.0.0<br>
-**Date:** 2025-12-29<br>
+**Date:** 2026-06-09<br>
 **SPDX-License-Identifier:** BSD-3-Clause<br>
 **License File:** See the LICENSE file in the project root<br>
-**Copyright:** © 2025 Michael Gardner, A Bit of Help, Inc.<br>
+**Copyright:** © 2025-2026 Michael Gardner, A Bit of Help, Inc.<br>
 **Status:** Released
 
 All notable changes to this project will be documented in this file.
@@ -18,7 +18,7 @@ No unreleased changes yet.
 
 ---
 
-## [1.0.0] - <YYYY-MM-DD pending tag>
+## [1.0.0] - 2026-06-09
 
 **Test Coverage:** 79 unit + 0 integration + 0 examples = 79 total
 
