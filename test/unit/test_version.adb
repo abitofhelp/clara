@@ -27,8 +27,8 @@ package body Test_Version is
 
       Assert (Clara.Version.Major = 1, "Major is 1");
       Assert (Clara.Version.Minor = 0, "Minor is 0");
-      Assert (Clara.Version.Patch = 0, "Patch is 0");
-      Assert (Clara.Version.Version = "1.0.0", "Version is 1.0.0");
+      Assert (Clara.Version.Patch = 1, "Patch is 1");
+      Assert (Clara.Version.Version = "1.0.1", "Version is 1.0.1");
       Assert
         (Clara.Version.Prerelease = "",
          "Prerelease is empty for stable");
@@ -38,7 +38,7 @@ package body Test_Version is
       Assert
         (not Clara.Version.Is_Development,
          "Is_Development is False for stable");
-      Assert (Clara.Version.Is_Stable, "Is_Stable is True for 1.0.0");
+      Assert (Clara.Version.Is_Stable, "Is_Stable is True for 1.0.1");
 
       Total := Total_Count;
       Passed := Passed_Count;

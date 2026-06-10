@@ -1,6 +1,6 @@
 name = "clara_tests"
 description = "Test suite for clara"
-version = "1.0.0"
+version = "1.0.1"
 authors = ["Michael Gardner"]
 maintainers = ["Michael Gardner <mike@abitofhelp.com>"]
 licenses = "BSD-3-Clause"
